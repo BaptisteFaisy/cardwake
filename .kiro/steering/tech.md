@@ -9,7 +9,7 @@
 | Schémas | Zod pour le format de fichier de pile |
 | CI | Runners self-hosted `cardwake-worker`, verdict ≤ 5 min, file Mergify |
 
-## Règles de code (règle user 2026-10-24, vérifiée par `scripts/guards`)
+## Règles de code (règle user sur les tailles, vérifiée par `scripts/guards` ; relevé antérieur, hors de cet arbre)
 
 - Un fichier de code fait **moins de 500 lignes** ; une fonction **moins de
   50 lignes**. Au-delà : découper, jamais laisser grossir.

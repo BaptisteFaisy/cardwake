@@ -12,7 +12,7 @@ Quatre contrôles, aucun réseau, stdlib uniquement :
                      d'où vient l'idée, en une phrase factuelle.
 3. `secrets`      : aucune clé d'API en clair dans l'arbre — CAR-N-03.
 4. `limits`       : fichiers < 500 lignes, fonctions < 50 lignes
-                     (règle user 2026-10-24), avec liste d'exceptions explicite.
+                     (règle user sur les tailles, relevé antérieur, hors de cet arbre), avec liste d'exceptions explicite.
 
 Sortie : code 0 si tout passe, 1 sinon ; une ligne `::error::` par problème
 pour que GitHub annote le run.
@@ -53,7 +53,7 @@ SECRET_PATTERNS = [
 ]
 SECRET_SKIP = ("run_all.py", "/node_modules/", "/dist/", ".git/")
 
-# 4. Tailles (règle user 2026-10-24).
+# 4. Tailles (règle user, relevé antérieur, hors de cet arbre).
 MAX_FILE_LINES = 500
 MAX_FUNC_LINES = 50
 LIMITS_SCAN_EXT = (".ts", ".tsx", ".py")
