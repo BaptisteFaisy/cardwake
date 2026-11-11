@@ -12,6 +12,7 @@
  *   et un champ verrouillé refuse la saisie humaine (CAR-F-06).
  */
 
+import type { PropName } from "@cardwake/lang";
 import type { Card, Rect, Stack, Transaction } from "@cardwake/model";
 
 /** Mode Jouer (on utilise la pile) ou mode Fabriquer (on la construit). */
@@ -91,6 +92,7 @@ export interface CardwakeEngine {
   addPart(kind: "button" | "field", name: string): void;
   addBackground(name: string): void;
   setPartRect(partId: number, rect: Rect): void;
+  setPartProp(partId: number, prop: PropName, value: string): void;
   deletePart(partId: number): void;
 
   /** Les deux gestes distincts de l'écran de réception (7.10, CAR-F-52). */

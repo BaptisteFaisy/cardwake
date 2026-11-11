@@ -16,7 +16,7 @@
  */
 
 import { ActionBudgetTracker, SessionBudgetTracker } from "@cardwake/agent";
-import type { Actor } from "@cardwake/lang";
+import type { Actor, PropName } from "@cardwake/lang";
 import {
   Journal,
   applyOps,
@@ -44,6 +44,28 @@ type FieldTarget = { backgroundId?: number; locked: boolean; part: Part };
 /** Générateur linéaire congruentiel : déterministe, sans `Math.random()`. */
 function stepSeed(seed: number): number {
   return (Math.imul(seed, 1103515245) + 12345) >>> 0;
+}
+
+/**
+ * Valeur texte actuelle d'une propriété d'élément. Le modèle lit cela dans
+ * `ops.ts`, mais sa fonction n'est pas exportée et le contrat est figé :
+ * miroir local, borné aux propriétés que l'inspecteur édite. `before` doit
+ * être exact pour que l'inverse calculé par le journal ramène à l'état d'avant.
+ */
+function readPropText(part: Part, prop: PropName): string {
+  if (prop === "name") return part.name;
+  if (prop === "visible") return String(part.visible);
+  if (prop === "style") return part.style;
+  if (prop === "rect") return part.rect.join(",");
+  if (part.kind === "field") {
+    if (prop === "locked") return String(part.locked);
+    if (prop === "text") return part.text;
+    return "";
+  }
+  if (prop === "label") return part.label;
+  if (prop === "enabled") return String(part.enabled);
+  if (prop === "hilite") return String(part.hilite);
+  return "";
 }
 
 class ModelEngine implements CardwakeEngine {
@@ -199,6 +221,21 @@ class ModelEngine implements CardwakeEngine {
       after: rect.join(","),
     };
     this.applyAuthorized(`human resize of "${part.name}"`, [op]);
+  }
+
+  setPartProp(partId: number, prop: PropName, value: string): void {
+    const card = this.currentCard();
+    if (this.stack === null || card === null) return;
+    const part = this.findPart(card, partId);
+    if (part === undefined) return;
+    const op: Op = {
+      kind: "setProp",
+      target: { kind: "part", cardId: card.id, partId },
+      prop,
+      before: readPropText(part, prop),
+      after: value,
+    };
+    this.applyAuthorized(`human edit of "${part.name}" (${prop})`, [op]);
   }
 
   deletePart(partId: number): void {
