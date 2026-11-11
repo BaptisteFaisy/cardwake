@@ -4,7 +4,7 @@ name: CI
 # qui nomme le check) : il est exigé par le ruleset de `main` et par la file
 # Mergify, comme `ci-budget` et `couche0`.
 #
-# Budget : 5 minutes au plus (règle user 2026-10-24, `~/Bureau/CI-BUDGET-5MIN.md`).
+# Budget : 5 minutes au plus (règle user du budget CI de 5 minutes, relevé antérieur, hors de cet arbre).
 # Pour tenir ce budget, le build du site (`vite build`) n'est PAS dans la CI de
 # PR : il tourne sur `main` dans `deploy.yml`. Ici : installation, types,
 # tests, gardes — tout en parallèle de rien, mais en un seul job pour que le
