@@ -1,0 +1,81 @@
+name: pages
+
+# Publication du site sur GitHub Pages (CAR-N-14 : hébergement statique gratuit,
+# en ligne jusqu'au 29 janvier 2027 au moins).
+#
+# Déclenché sur `main` seulement : le build ne bloque jamais le verdict de 5
+# minutes d'une PR (règle CI-BUDGET-5MIN), il tourne après le merge. Aucune
+# ressource distante n'est chargée par le site : le mode enregistré fonctionne
+# sans service tiers.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: build
+    runs-on: [self-hosted, linux, x64, cardwake-worker]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Environnement
+        shell: bash
+        run: |
+          export PATH="$HOME/bin:/usr/local/bin:/usr/bin:$PATH"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+          node -v
+
+      - name: Dépendances
+        shell: bash
+        run: |
+          export PATH="$HOME/bin:/usr/local/bin:/usr/bin:$PATH"
+          npm ci --no-audit --no-fund --prefer-offline
+
+      - name: Build du site
+        shell: bash
+        run: |
+          export PATH="$HOME/bin:/usr/local/bin:/usr/bin:$PATH"
+          npm run build
+          test -f apps/web/dist/index.html
+
+      - name: Garde : aucune construction dangereuse dans le site produit
+        shell: bash
+        run: |
+          if grep -rEl 'eval\(|new Function|innerHTML' apps/web/dist 2>/dev/null; then
+            echo "::error::le site construit contient une construction interdite (CAR-N-01)"
+            exit 1
+          fi
+          echo "site produit : 0 construction interdite"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+  deploy:
+    name: deploy
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

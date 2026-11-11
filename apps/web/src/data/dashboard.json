@@ -1,0 +1,227 @@
+{
+  "backgrounds": [],
+  "cards": [
+    {
+      "agent": {
+        "awake": true,
+        "level": 2,
+        "persona": "You write short, factual weekly summaries. You use only what the Log field says.",
+        "speed": "fast"
+      },
+      "background": null,
+      "content": {},
+      "id": 10,
+      "ink": {},
+      "name": "Week",
+      "parts": [
+        {
+          "id": 11,
+          "kind": "field",
+          "locked": false,
+          "multiline": true,
+          "name": "Tasks",
+          "rect": [
+            16,
+            40,
+            480,
+            96
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "Fix the sink\nCall the supplier",
+          "visible": true
+        },
+        {
+          "id": 12,
+          "kind": "field",
+          "locked": false,
+          "multiline": false,
+          "name": "New",
+          "rect": [
+            16,
+            144,
+            380,
+            24
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "id": 13,
+          "kind": "field",
+          "locked": false,
+          "multiline": true,
+          "name": "Log",
+          "rect": [
+            16,
+            176,
+            480,
+            96
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "Monday: two calls, one repair. Wednesday: supplier late. Friday: paperwork.",
+          "visible": true
+        },
+        {
+          "id": 14,
+          "kind": "field",
+          "locked": true,
+          "multiline": true,
+          "name": "Summary",
+          "rect": [
+            16,
+            280,
+            480,
+            60
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "id": 15,
+          "kind": "field",
+          "locked": true,
+          "multiline": false,
+          "name": "Dated",
+          "rect": [
+            16,
+            348,
+            200,
+            24
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 16,
+          "kind": "button",
+          "label": "Add task",
+          "name": "Add task",
+          "rect": [
+            16,
+            380,
+            120,
+            28
+          ],
+          "script": "on mouseUp\n  if field \"New\" is empty then\n    exit mouseUp\n  end if\n  put field \"New\" & return after field \"Tasks\"\n  put empty into field \"New\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 17,
+          "kind": "button",
+          "label": "Summarise my week",
+          "name": "Summarise my week",
+          "rect": [
+            152,
+            380,
+            180,
+            28
+          ],
+          "script": "on mouseUp\n  consult agent with \"Summarise this week from the Log field, in three sentences.\"\n  put it into field \"Summary\"\n  put the date into field \"Dated\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        }
+      ],
+      "script": ""
+    },
+    {
+      "agent": null,
+      "background": null,
+      "content": {},
+      "id": 20,
+      "ink": {},
+      "name": "How this works",
+      "parts": [
+        {
+          "id": 21,
+          "kind": "field",
+          "locked": true,
+          "multiline": true,
+          "name": "Notes",
+          "rect": [
+            16,
+            40,
+            480,
+            140
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "Press \"Summarise my week\": the card asks its own agent, which reads the Log field and writes into Summary. The agent has no hidden memory — everything it knows is in the fields you can read, edit and undo. The journal shows who wrote what.",
+          "visible": true
+        },
+        {
+          "id": 22,
+          "kind": "field",
+          "locked": true,
+          "multiline": true,
+          "name": "Script",
+          "rect": [
+            16,
+            188,
+            480,
+            100
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "on mouseUp\n  consult agent with \"Summarise this week from the Log field, in three sentences.\"\n  put it into field \"Summary\"\n  put the date into field \"Dated\"\nend mouseUp",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 23,
+          "kind": "button",
+          "label": "Open the dashboard",
+          "name": "Open the dashboard",
+          "rect": [
+            16,
+            296,
+            200,
+            28
+          ],
+          "script": "on mouseUp\n  go to card \"Week\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        }
+      ],
+      "script": ""
+    }
+  ],
+  "currentCardId": 20,
+  "format": "cardwake/1",
+  "name": "Dashboard",
+  "nextId": 30,
+  "persona": "A personal dashboard that stays on your machine. Agents write in fields you can read and edit.",
+  "provenance": {
+    "kind": "created"
+  },
+  "script": "",
+  "settings": {
+    "agentInputTokensPerSession": 400000,
+    "agentMaxIterations": 6,
+    "agentMaxOutputTokens": 2000,
+    "agentQueueLength": 20,
+    "agentTimeoutMs": 30000,
+    "agentTurnsPerAction": 8,
+    "agentTurnsPerSession": 60,
+    "cardViewChars": 8000,
+    "fieldViewChars": 2000,
+    "hopBudget": 3,
+    "maxMessageDepth": 50,
+    "maxSteps": 100000,
+    "maxWaitMs": 5000,
+    "tickSeconds": 0
+  }
+}

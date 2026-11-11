@@ -137,6 +137,19 @@ code,
   margin: 0.5rem 0;
 }
 
+/* Texte pour les lecteurs d'écran seulement (12.4). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .state-note.refusal {
   border-left-color: var(--accent);
 }

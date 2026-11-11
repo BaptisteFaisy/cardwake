@@ -10,6 +10,8 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  // Pages d'un dépôt : le site est servi sous /cardwake/.
+  base: "/cardwake/",
   plugins: [react()],
   build: {
     outDir: "dist",
