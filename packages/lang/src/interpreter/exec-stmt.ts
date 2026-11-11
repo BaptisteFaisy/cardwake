@@ -33,59 +33,48 @@ async function arithmetic(op: "add" | "subtract" | "multiply" | "divide", curren
   return formatNumber(round(left / right, 6));
 }
 
-async function repeatLoop(loop: RepeatLoop, body: Stmt[], env: Env): Promise<void> {
-  if (loop.kind === "with") {
-    const from = number(await evalExpr(loop.from, env), "A loop start");
-    const to = number(await evalExpr(loop.to, env), "A loop end");
-    const step = loop.step ? number(await evalExpr(loop.step, env), "A loop step") : 1;
-    if (step === 0) throw new Halt(runtimeError("A loop step cannot be zero."));
-    for (let index = from; step > 0 ? index <= to : index >= to; index += step) {
-      env.step("a loop iteration");
-      env.set(loop.name, formatNumber(index));
-      try {
-        await execBody(body, env);
-      } catch (signal) {
-        if (!(signal instanceof ExitRepeat)) throw signal;
-        return;
-      }
-    }
-    return;
+/** Un tour de boucle : `exit repeat` l'interrompt, toute autre erreur remonte. */
+async function runLoopBody(body: Stmt[], env: Env): Promise<boolean> {
+  env.step("a loop iteration");
+  try {
+    await execBody(body, env);
+  } catch (signal) {
+    if (signal instanceof ExitRepeat) return false;
+    throw signal;
   }
+  return true;
+}
+
+async function repeatWith(loop: Extract<RepeatLoop, { kind: "with" | "times" }>, body: Stmt[], env: Env): Promise<void> {
   if (loop.kind === "times") {
     const times = Math.trunc(number(await evalExpr(loop.count, env), "A repetition count"));
     for (let index = 0; index < times; index += 1) {
-      env.step("a loop iteration");
-      try {
-        await execBody(body, env);
-      } catch (signal) {
-        if (!(signal instanceof ExitRepeat)) throw signal;
-        return;
-      }
+      if (!(await runLoopBody(body, env))) return;
     }
     return;
   }
+  const from = number(await evalExpr(loop.from, env), "A loop start");
+  const to = number(await evalExpr(loop.to, env), "A loop end");
+  const step = loop.step ? number(await evalExpr(loop.step, env), "A loop step") : 1;
+  if (step === 0) throw new Halt(runtimeError("A loop step cannot be zero."));
+  for (let index = from; step > 0 ? index <= to : index >= to; index += step) {
+    env.set(loop.name, formatNumber(index));
+    if (!(await runLoopBody(body, env))) return;
+  }
+}
+
+async function repeatLoop(loop: RepeatLoop, body: Stmt[], env: Env): Promise<void> {
+  if (loop.kind === "with" || loop.kind === "times") return repeatWith(loop, body, env);
   if (loop.kind === "forEach") {
     const source = await evalExpr(loop.in, env);
     for (const item of splitForLoop(loop.chunkType, source)) {
-      env.step("a loop iteration");
       env.set(loop.name, item);
-      try {
-        await execBody(body, env);
-      } catch (signal) {
-        if (!(signal instanceof ExitRepeat)) throw signal;
-        return;
-      }
+      if (!(await runLoopBody(body, env))) return;
     }
     return;
   }
   while (truthy(await evalExpr(loop.cond, env))) {
-    env.step("a loop iteration");
-    try {
-      await execBody(body, env);
-    } catch (signal) {
-      if (!(signal instanceof ExitRepeat)) throw signal;
-      return;
-    }
+    if (!(await runLoopBody(body, env))) return;
   }
 }
 
@@ -133,6 +122,15 @@ export async function execStmt(stmt: Stmt, env: Env): Promise<void> {
       const result = await arithmetic(stmt.op, current, operand);
       return writeContainer(stmt.target, result, "replace", env);
     }
+    default:
+      return execStmtRest(stmt, env);
+  }
+}
+
+/** Seconde moitié des instructions : gardée séparée pour rester sous 50 lignes. */
+async function execStmtRest(stmt: Stmt, env: Env): Promise<void> {
+  const host = env.host;
+  switch (stmt.kind) {
     case "create": {
       if (stmt.what.kind === "background") {
         host.createBackground(stmt.what.name ? await evalExpr(stmt.what.name, env) : undefined);
@@ -168,6 +166,15 @@ export async function execStmt(stmt: Stmt, env: Env): Promise<void> {
       await host.wait(ms);
       return;
     }
+    default:
+      return execStmtTail(stmt, env);
+  }
+}
+
+/** Troisième groupe : agent, blocs et contrôle de flot. */
+async function execStmtTail(stmt: Stmt, env: Env): Promise<void> {
+  const host = env.host;
+  switch (stmt.kind) {
     case "consult": {
       const reply = await host.consult(resolveRef({ kind: "agent", ref: stmt.agent, span: stmt.span }, env), await evalExpr(stmt.with, env));
       env.it = reply;
@@ -203,8 +210,11 @@ export async function execStmt(stmt: Stmt, env: Env): Promise<void> {
       }
       return host.sendMessage(stmt.name, args, resolveRef({ kind: "me", span: stmt.span }, env));
     }
+    default:
+      throw new Halt(runtimeError(`Unknown command: ${stmt.kind}`));
   }
 }
+
 
 /** Appel de fonction depuis une instruction : même portée que depuis une expression. */
 async function callFunction(name: string, args: string[], env: Env): Promise<string> {

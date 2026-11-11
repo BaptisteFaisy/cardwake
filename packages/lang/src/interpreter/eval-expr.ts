@@ -132,6 +132,14 @@ async function evalBinary(expr: Extract<Expr, { kind: "bin" }>, env: Env): Promi
       return formatNumber(Math.trunc(num(left, "div") / num(right, "div")));
     case "mod":
       return formatNumber(num(left, "mod") % num(right, "mod"));
+    default:
+      return evalComparison(expr.op, left, right);
+  }
+}
+
+/** Comparaisons et logique : séparées de l'arithmétique pour rester lisibles. */
+function evalComparison(op: string, left: string, right: string): string {
+  switch (op) {
     case "contains":
       return left.toLowerCase().includes(right.toLowerCase()) ? "true" : "false";
     case "isIn":
@@ -146,13 +154,15 @@ async function evalBinary(expr: Extract<Expr, { kind: "bin" }>, env: Env): Promi
     case ">=": {
       const order = compareTexts(left, right);
       const holds =
-        expr.op === "<" ? order < 0 : expr.op === ">" ? order > 0 : expr.op === "<=" ? order <= 0 : order >= 0;
+        op === "<" ? order < 0 : op === ">" ? order > 0 : op === "<=" ? order <= 0 : order >= 0;
       return holds ? "true" : "false";
     }
     case "and":
       return truthy(left) && truthy(right) ? "true" : "false";
     case "or":
       return truthy(left) || truthy(right) ? "true" : "false";
+    default:
+      return "false";
   }
 }
 
@@ -205,7 +215,21 @@ async function evalCall(expr: Extract<Expr, { kind: "call" }>, env: Env): Promis
 
 /** Évalue une expression et rend du texte. */
 export async function evalExpr(expr: Expr, env: Env): Promise<string> {
-  const host: Host = env.host;
+  switch (expr.kind) {
+    case "count":
+    case "prop":
+    case "theDate":
+    case "theTime":
+    case "theLongDate":
+    case "objText":
+    case "chunk":
+      return evalWorld(expr, env);
+    default:
+      return evalValue(expr, env);
+  }
+}
+
+async function evalValue(expr: Expr, env: Env): Promise<string> {
   switch (expr.kind) {
     case "str":
       return expr.value;
@@ -234,6 +258,15 @@ export async function evalExpr(expr: Expr, env: Env): Promise<string> {
       return evalFunction(expr, env);
     case "call":
       return evalCall(expr, env);
+    default:
+      return evalWorld(expr, env);
+  }
+}
+
+/** Les expressions qui interrogent le monde : compteurs, propriétés, objets, morceaux. */
+async function evalWorld(expr: Expr, env: Env): Promise<string> {
+  const host: Host = env.host;
+  switch (expr.kind) {
     case "count": {
       if (expr.subject === "cards") return String(host.cardCount());
       const source = expr.of ? await evalExpr(expr.of, env) : "";
@@ -260,6 +293,8 @@ export async function evalExpr(expr: Expr, env: Env): Promise<string> {
       const bounds = await boundsOf(expr.chunk, env);
       return readChunk(source, expr.chunk.type, bounds.ordinal, bounds.from, bounds.to);
     }
+    default:
+      throw new Halt(typeError(undefined, `Unknown expression: ${expr.kind}`));
   }
 }
 
