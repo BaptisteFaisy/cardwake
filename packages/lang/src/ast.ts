@@ -128,12 +128,14 @@ export type Expr =
   | { kind: "it"; span: Span }
   | { kind: "empty"; span: Span }
   | { kind: "bin"; op: BinOp; left: Expr; right: Expr; span: Span }
+  /** Test d'emptiness : `x is empty`, `x is not empty`. */
+  | { kind: "test"; test: "empty" | "notEmpty"; operand: Expr; span: Span }
   | { kind: "not"; operand: Expr; span: Span }
   | { kind: "neg"; operand: Expr; span: Span }
   | { kind: "paren"; inner: Expr; span: Span }
   | { kind: "fn"; fn: BuiltinFn; args: Expr[]; span: Span }
   | { kind: "call"; name: string; args: Expr[]; span: Span }
-  | { kind: "count"; subject: CountSubject; of?: Expr | ObjRef; span: Span }
+  | { kind: "count"; subject: CountSubject; of?: Expr; span: Span }
   | { kind: "prop"; prop: PropName; of: ObjRef; span: Span }
   | { kind: "theDate" | "theTime" | "theLongDate"; span: Span }
   /** `field "X"` lu comme valeur : le texte du champ. */
@@ -161,12 +163,14 @@ export type Chunk = {
 
 /**
  * Cible d'une écriture. Trois formes : une variable locale/globale, `it`,
- * ou un objet (champ, propriété) éventuellement réduit à un morceau.
+ * ou un objet (champ, propriété) éventuellement réduit à un morceau. Les
+ * morceaux s'imbriquent : `word 1 of line 2 of field "Tasks"`.
  */
 export type Container =
   | { kind: "var"; name: string; span: Span }
   | { kind: "it"; span: Span }
-  | { kind: "obj"; ref: ObjRef; chunk?: Chunk; prop?: PropName; span: Span };
+  | { kind: "obj"; ref: ObjRef; span: Span }
+  | { kind: "chunk"; chunk: Chunk; of: Container; span: Span };
 
 // --------------------------------------------------------------------------
 // Instructions
