@@ -8,7 +8,10 @@
  * chaque demande en opérations réversibles, validées par `authorize`.
  */
 
-import type { Chunk, ChunkType, ObjRef, PropName, ScriptError } from "./ast";
+import type { ChunkType, ObjRef, PropName, ScriptError } from "./ast";
+
+/** Bornes d'un morceau, déjà évaluées par l'interpréteur (1-based, négatif = depuis la fin). */
+export type ChunkBounds = { ordinal?: number; from?: number; to?: number };
 
 /** Qui exécute : un humain, un script, ou l'agent d'une carte. */
 export type Actor =
@@ -29,8 +32,10 @@ export interface WorldReader {
   resolve(ref: ObjRef): ResolvedRef | ScriptError;
   readText(ref: ResolvedRef): string | ScriptError;
   readProp(ref: ResolvedRef, prop: PropName): string | ScriptError;
-  /** Découpage d'un texte en morceaux, partagé lecture/écriture. */
-  chunkBounds(text: string, chunk: Chunk): { start: number; end: number } | ScriptError;
+  /** Nombre de cartes de la pile, pour `the number of cards`. */
+  cardCount(): number;
+  /** Carte affichée : la cible implicite de `create` et de `me`. */
+  currentCardId(): number;
   cardName(id: number): string;
   partName(id: number): string;
 }
@@ -38,7 +43,7 @@ export interface WorldReader {
 /** Effets demandés par un script. Chacun devient une opération réversible. */
 export interface WorldWriter {
   writeText(ref: ResolvedRef, text: string, mode: "replace" | "before" | "after"): void;
-  writeChunk(ref: ResolvedRef, chunk: Chunk, text: string, mode: "replace" | "before" | "after"): void;
+  writeChunk(ref: ResolvedRef, chunkType: ChunkType, text: string, mode: "replace" | "before" | "after", bounds: ChunkBounds): void;
   writeProp(ref: ResolvedRef, prop: PropName, value: string): void;
   createCard(name?: string, background?: string): number;
   createBackground(name?: string): number;
