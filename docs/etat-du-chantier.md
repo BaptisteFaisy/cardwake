@@ -1,4 +1,4 @@
-# État du chantier — 11 novembre 2026, 19 h
+# État du chantier — 11 novembre 2026, 21 h
 
 Document écrit à la fin de la première session de construction. Il dit ce qui
 est en ligne, ce qui est prouvé par des tests, ce qui reste, et comment
@@ -27,12 +27,21 @@ Les trois premières PR sont passées par la file et ont été mergées sans cli
 - Propriétés prouvées : **CAR-P-01**, **CAR-P-02** (2 000 tirages), **CAR-P-05**, **CAR-P-21**.
 - Les trois scripts d'exemple du cahier des charges s'analysent et se réimpriment à l'identique.
 
+**`packages/lang` (suite)** — l'interpréteur.
+- `interpreter/runtime.ts` : portée des variables, `it`, compteurs d'étapes et d'attente, signaux de contrôle (`exit repeat`, `exit <handler>`, `return`, garde-fou atteint).
+- `interpreter/eval-expr.ts`, `exec-stmt.ts`, `index.ts` : évaluation des expressions, exécution des instructions, `runHandler`.
+- Tous les effets passent par l'interface `Host` : le paquet reste pur et le point de passage des droits reste unique.
+- Propriétés prouvées : **CAR-P-04** (même graine, même suite d'effets), **CAR-P-06** (une boucle sans fin s'arrête sous `maxSteps`).
+- Les trois scripts du cahier s'exécutent : la liste de tâches ajoute sa ligne, le devis calcule 150 / 15 / 165, le bouton du manoir consulte l'agent.
+- Découverte notée au passage : `true`, `false`, `return`, `tab` et `comma` doivent être des **constantes**, pas des variables — sinon `repeat while true` ne boucle jamais, et c'est exactement le contre-exemple que CAR-P-06 a trouvé.
+
 **`packages/model`** (pur) — schéma, fabriques, identifiants, fichier, migration, droits.
 - `schema.ts` : validation à la main du format `cardwake/1`, erreurs avec chemin en anglais.
 - `factory.ts`, `ids.ts` : fabriques sans mutation, identifiants monotones jamais réutilisés.
 - `file.ts`, `migrate.ts` : JSON canonique, refus en bloc, format versionné.
 - `authorize.ts` : **le point de passage unique des droits**.
-- Propriétés prouvées : **CAR-P-11**, **CAR-P-12**, **CAR-P-13**, **CAR-P-17**, **CAR-P-18**, **CAR-P-22**.
+- `clone.ts`, `ops.ts`, `journal.ts` : les 14 variantes d'`Op` s'appliquent et s'inversent, le journal annule transaction par transaction, l'historique fond dans un instantané au-delà de 200.
+- Propriétés prouvées : **CAR-P-07**, **CAR-P-08**, **CAR-P-10**, **CAR-P-11**, **CAR-P-12**, **CAR-P-13**, **CAR-P-17**, **CAR-P-18**, **CAR-P-22**, **CAR-P-23**.
 
 **`packages/agent`** — passerelle et outillage d'agent.
 - `gateway/sha256.ts`, `canon.ts` : empreinte SHA-256 canonique d'une requête.
@@ -57,9 +66,8 @@ Les trois premières PR sont passées par la file et ont été mergées sans cli
 
 | Lot | Fichiers à écrire | Dépend de | Brief |
 |---|---|---|---|
-| C3 fin | `model/src/clone.ts`, `ops.ts`, `journal.ts` + tests | `types.ts` seulement | `/tmp/cw-briefs/model.md` |
-| C2 | `lang/src/interpreter/*` (évaluer les expressions, exécuter les instructions, garde-fous, `runHandler`) | `ast.ts`, `host.ts`, `values.ts`, `chunks.ts`, `parser.ts` | `/tmp/cw-briefs/interp.md` |
-| C4 | `model/src/dispatch.ts` (hiérarchie des messages, file, compteur de sauts) + l'implémentation de `Host` | `ops.ts`, `journal.ts`, interpréteur | `/tmp/cw-briefs/dispatch.md` |
+| C4a | `model/src/host.ts` : l'implémentation de `Host` (effets de script → opérations validées par `authorize` et journalisées) | `interpreter`, `ops`, `journal`, `authorize` | `/tmp/cw-briefs/dispatch.md` |
+| C4 | `model/src/dispatch.ts` (hiérarchie des messages, file, compteur de sauts, réveil de l'agent) | `host.ts` (C4a), interpréteur | `/tmp/cw-briefs/dispatch.md` |
 | C6 fin | `agent/src/loop.ts` (la boucle d'un tour) | `view.ts`, `tools.ts`, `budget.ts`, `queue.ts`, `gateway/*`, `dispatch.ts` | `/tmp/cw-briefs/loop.md` |
 | C7 | `agent/src/write-script.ts` (phrase → brouillon → contrôles → relecture → essai à blanc → accord) | `check.ts`, `paraphrase.ts`, `gateway/*` | `docs/language.md` + brief `lang.md` |
 | C1 fin | `lang/src/paraphrase.ts`, `lang/src/check.ts` | `ast.ts`, `print.ts` | `/tmp/cw-briefs/lang.md` |
