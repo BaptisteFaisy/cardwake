@@ -1,42 +1,35 @@
 /**
- * Racine du site.
- *
- * Étape en cours du lot C5 : le moteur réel (`engine/model-engine.ts`), le
- * contexte (`store.tsx`), les textes (`i18n.ts`) et les deux encres
- * (`styles/two-inks.css`) sont en place. Cette amorce monte le moteur dans le
- * contexte et affiche le titre et la pile ouverte ; les sept écrans prennent la
- * suite et liront l'état via `useCardwake()`.
+ * Racine du site : trois écrans pour cette étape — l'étagère, la carte et le
+ * journal. Le moteur est injecté ici et porté par le contexte, donc un moteur
+ * de remplacement (tests, démonstration enregistrée) se branche sans toucher
+ * aux écrans.
  */
 
-import type { ReactNode } from "react";
+import { useState } from "react";
 import type { CardwakeEngine } from "./engine/types";
-import { CardwakeProvider, useCardwake } from "./store";
-import { t } from "./i18n";
+import { CardwakeProvider } from "./store";
+import { CardScreen } from "./screens/CardScreen";
+import { JournalScreen } from "./screens/JournalScreen";
+import { Shelf } from "./screens/Shelf";
 import "./styles/two-inks.css";
 
-/** Ce que le cadre affiche tant que les écrans ne sont pas montés. */
-function Shell() {
-  const { stack, mode } = useCardwake();
-  return (
-    <main className="app">
-      <header className="app__header">
-        <h1>{t("app.title")}</h1>
-        <p className="app__mode">{t(`mode.${mode}`)}</p>
-      </header>
-      <section className="app__body">
-        {stack ? (
-          <p>{t("shelf.stacks.count", { count: stack.cards.length })}</p>
-        ) : (
-          <p>{t("state.emptyStack")}</p>
-        )}
-      </section>
-    </main>
-  );
+type View = "shelf" | "card" | "journal";
+
+function Screens(): JSX.Element {
+  const [view, setView] = useState<View>("shelf");
+  if (view === "card") {
+    return <CardScreen onShelf={() => setView("shelf")} onJournal={() => setView("journal")} />;
+  }
+  if (view === "journal") return <JournalScreen onBack={() => setView("card")} />;
+  return <Shelf onOpenStack={() => setView("card")} />;
 }
 
-export function App({ engine }: { engine?: CardwakeEngine }) {
-  const shell: ReactNode = <Shell />;
-  return engine ? <CardwakeProvider engine={engine}>{shell}</CardwakeProvider> : <main className="app">{t("app.title")}</main>;
+export function App({ engine }: { engine: CardwakeEngine }): JSX.Element {
+  return (
+    <CardwakeProvider engine={engine}>
+      <Screens />
+    </CardwakeProvider>
+  );
 }
 
 export default App;
