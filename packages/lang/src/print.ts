@@ -221,6 +221,14 @@ export function printStmt(stmt: Stmt): string[] {
       return [printCreate(stmt.what)];
     case "delete":
       return [`delete ${printObjRef(stmt.obj)}`];
+    default:
+      return printStmtRest(stmt);
+  }
+}
+
+/** Seconde moitié du dispatch : gardée séparée pour rester sous 50 lignes. */
+function printStmtRest(stmt: Stmt): string[] {
+  switch (stmt.kind) {
     case "sort":
       return [printSort(stmt.spec)];
     case "find":
@@ -259,6 +267,8 @@ export function printStmt(stmt: Stmt): string[] {
       return [`global ${stmt.names.join(", ")}`];
     case "call":
       return [stmt.args.length > 0 ? `${stmt.name} ${stmt.args.map(printExpr).join(", ")}` : stmt.name];
+    default:
+      throw new Error(`Unknown statement: ${stmt.kind}`);
   }
 }
 

@@ -18,7 +18,7 @@ import { CassetteMiss } from "../src/types";
 import type { LlmRequest } from "../src/types";
 import { fakeProvider, makeRequest, openAiReply, openAiToolCall } from "../src/testing/fake-model";
 
-const KEY = "sk-super-secret-key-do-not-leak";
+const KEY = "fake-test-key-not-a-real-secret";
 const live = new AbortController().signal;
 
 /** Une requête qui exerce tous les blocs et tous les schémas. */

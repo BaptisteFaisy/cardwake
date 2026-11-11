@@ -124,7 +124,8 @@ export function arbContainer(depth: number): fc.Arbitrary<Container> {
   );
 }
 
-export function arbExpr(depth = 2): fc.Arbitrary<Expr> {
+/** Valeurs primaires : feuilles de tout arbre d'expression. */
+function arbLeafExpr(): fc.Arbitrary<Expr> {
   const leaf: fc.Arbitrary<Expr> = fc.oneof(
     arbStr,
     arbNum,
@@ -136,6 +137,11 @@ export function arbExpr(depth = 2): fc.Arbitrary<Expr> {
       (kind): Expr => ({ kind, span: SPAN }),
     ),
   );
+  return leaf;
+}
+
+export function arbExpr(depth = 2): fc.Arbitrary<Expr> {
+  const leaf = arbLeafExpr();
   if (depth <= 0) return leaf;
   const sub = (): fc.Arbitrary<Expr> => arbExpr(depth - 1);
   return fc.oneof(
@@ -181,11 +187,13 @@ export function arbExpr(depth = 2): fc.Arbitrary<Expr> {
 // Instructions et scripts
 // --------------------------------------------------------------------------
 
-function arbSimpleStmt(depth: number): fc.Arbitrary<Stmt> {
+/** Première moitié des instructions simples (gardée courte, < 50 lignes). */
+function arbSimpleStmtA(depth: number): fc.Arbitrary<Stmt> {
   const expr = arbExpr(depth);
   const container = arbContainer(depth);
   const obj = arbObjRef(depth);
   return fc.oneof(
+
     fc.tuple(expr, fc.constantFrom("into" as const, "before" as const, "after" as const), container).map(
       ([e, mode, target]): Stmt => ({ kind: "put", expr: e, mode, target, span: SPAN }),
     ),
@@ -204,6 +212,15 @@ function arbSimpleStmt(depth: number): fc.Arbitrary<Stmt> {
     fc.tuple(expr, fc.option(container, { nil: undefined })).map(
       ([prompt, into]): Stmt => ({ kind: "ask", prompt, into, span: SPAN }),
     ),
+  );
+}
+
+function arbSimpleStmt(depth: number): fc.Arbitrary<Stmt> {
+  const expr = arbExpr(depth);
+  const container = arbContainer(depth);
+  const obj = arbObjRef(depth);
+  return fc.oneof(
+    arbSimpleStmtA(depth),
     fc.tuple(fc.constantFrom("show" as const, "hide" as const), obj).map(
       ([kind, o]): Stmt => ({ kind, obj: o, span: SPAN }),
     ),
