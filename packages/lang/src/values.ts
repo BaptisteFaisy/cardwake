@@ -14,6 +14,16 @@ export const TEXT_CONSTANTS: Record<string, string> = {
   quote: '"',
 };
 
+/**
+ * Constantes du langage : les caractères (`return`, `tab`…) et les deux valeurs
+ * logiques. Une variable du même nom n'existe pas : `true` vaut toujours `true`.
+ */
+export function lookupConstant(name: string): string | undefined {
+  const key = name.toLowerCase();
+  if (key === "true" || key === "false") return key;
+  return TEXT_CONSTANTS[key];
+}
+
 const NUMBER_SHAPE = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?$/;
 
 /** Le texte a la forme d'un nombre (et sert donc de nombre). */
