@@ -48,9 +48,17 @@ jobs:
         shell: bash
         run: |
           export PATH="$HOME/bin:/usr/local/bin:/usr/bin:$PATH"
+          # Le site n'existe pas encore tant que le lot C5 n'est pas livré :
+          # autant le dire que faire rougir `main` pour rien.
+          if [ ! -f apps/web/index.html ]; then
+            echo "apps/web/index.html absent : build du site ignoré (lot C5 à venir)"
+            echo "SKIP_BUILD=1" >> "$GITHUB_ENV"
+            exit 0
+          fi
           npm run build
 
       - name: Garde : aucune construction dangereuse dans le site produit
+        if: env.SKIP_BUILD != '1'
         shell: bash
         run: |
           if grep -rEl 'eval\(|new Function|innerHTML' apps/web/dist 2>/dev/null; then
@@ -60,6 +68,7 @@ jobs:
           echo "site produit : 0 construction interdite"
 
       - uses: actions/upload-artifact@v4
+        if: env.SKIP_BUILD != '1'
         with:
           name: cardwake-web
           path: apps/web/dist

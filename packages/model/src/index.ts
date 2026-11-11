@@ -15,3 +15,6 @@ export * from "./factory";
 export * from "./schema";
 export * from "./file";
 export * from "./migrate";
+export * from "./clone";
+export * from "./ops";
+export * from "./journal";
