@@ -53,14 +53,20 @@ jobs:
           npm run build
           test -f apps/web/dist/index.html
 
-      - name: "Garde : aucune construction dangereuse dans le site produit"
+      # Les constructions interdites (eval, new Function, innerHTML) sont
+      # contrôlées sur les SOURCES par le job `ci` : dans un paquet minifié,
+      # ces motifs apparaissent dans la bibliothèque React elle-même et un
+      # grep sur `dist` ne produirait que des faux positifs. Ici on garde ce
+      # qui est propre au site publié : aucune ressource distante, donc le
+      # mode enregistré fonctionne sans service tiers (CAR-N-14).
+      - name: "Garde : le site publié ne charge rien de distant"
         shell: bash
         run: |
-          if grep -rEl 'eval\(|new Function|innerHTML' apps/web/dist 2>/dev/null; then
-            echo "::error::le site construit contient une construction interdite (CAR-N-01)"
+          if grep -Eo 'src="https?://|href="https?://' apps/web/dist/index.html; then
+            echo "::error::le site publié référence une ressource distante (CAR-N-14)"
             exit 1
           fi
-          echo "site produit : 0 construction interdite"
+          echo "site publié : aucune ressource distante"
 
       - uses: actions/configure-pages@v5
 
