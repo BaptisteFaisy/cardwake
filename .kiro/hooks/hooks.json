@@ -1,0 +1,59 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "No live model: the agent never spends the API key",
+      "trigger": "PreToolUse",
+      "matcher": "shell",
+      "action": { "type": "command", "command": "node scripts/hooks/no-live-model-guard.mjs" }
+    },
+    {
+      "name": "Secrets: no API-key shaped text ever enters the repository",
+      "trigger": "PreToolUse",
+      "matcher": "fsWrite",
+      "action": { "type": "command", "command": "node scripts/hooks/secret-guard.mjs" }
+    },
+    {
+      "name": "Trademarks: product, stacks and evals carry no third-party name",
+      "trigger": "PreToolUse",
+      "matcher": "fsWrite",
+      "action": { "type": "command", "command": "node scripts/hooks/trademark-guard.mjs" }
+    },
+    {
+      "name": "No eval: model output is text, never code",
+      "trigger": "PreToolUse",
+      "matcher": "fsWrite",
+      "action": { "type": "command", "command": "node scripts/hooks/no-eval-guard.mjs" }
+    },
+    {
+      "name": "Single gate: only dispatch and authorize apply operations",
+      "trigger": "PreToolUse",
+      "matcher": "fsWrite",
+      "action": { "type": "command", "command": "node scripts/hooks/single-gate-guard.mjs" }
+    },
+    {
+      "name": "Language properties CAR-P-01..06 stay green",
+      "trigger": "PostToolUse",
+      "matcher": "fsWrite",
+      "action": { "type": "command", "command": "node scripts/hooks/lang-properties.mjs" }
+    },
+    {
+      "name": "Language reference: one text for two AIs, examples still parse",
+      "trigger": "PostToolUse",
+      "matcher": "fsWrite",
+      "action": { "type": "command", "command": "node scripts/hooks/language-sync.mjs" }
+    },
+    {
+      "name": "Cassettes: list recordings older than the stack they replay",
+      "trigger": "PostToolUse",
+      "matcher": "fsWrite",
+      "action": { "type": "command", "command": "node scripts/hooks/cassette-verify.mjs" }
+    },
+    {
+      "name": "Journal: one line per spec task in docs/journal.md",
+      "trigger": "Stop",
+      "matcher": "*",
+      "action": { "type": "command", "command": "node scripts/hooks/journal-reminder.mjs" }
+    }
+  ]
+}

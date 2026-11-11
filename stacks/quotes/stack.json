@@ -1,0 +1,404 @@
+{
+  "backgrounds": [
+    {
+      "id": 2,
+      "name": "Client",
+      "parts": [
+        {
+          "id": 3,
+          "kind": "field",
+          "locked": false,
+          "multiline": false,
+          "name": "Name",
+          "rect": [
+            16,
+            40,
+            240,
+            24
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "id": 4,
+          "kind": "field",
+          "locked": false,
+          "multiline": true,
+          "name": "Lines",
+          "rect": [
+            16,
+            72,
+            480,
+            96
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "id": 5,
+          "kind": "field",
+          "locked": false,
+          "multiline": false,
+          "name": "New",
+          "rect": [
+            16,
+            176,
+            380,
+            24
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "id": 6,
+          "kind": "field",
+          "locked": true,
+          "multiline": false,
+          "name": "Subtotal",
+          "rect": [
+            16,
+            208,
+            140,
+            24
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "id": 7,
+          "kind": "field",
+          "locked": true,
+          "multiline": false,
+          "name": "VAT",
+          "rect": [
+            172,
+            208,
+            140,
+            24
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "id": 8,
+          "kind": "field",
+          "locked": true,
+          "multiline": false,
+          "name": "Total",
+          "rect": [
+            328,
+            208,
+            168,
+            24
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "id": 9,
+          "kind": "field",
+          "locked": false,
+          "multiline": true,
+          "name": "Follow-up",
+          "rect": [
+            16,
+            240,
+            480,
+            72
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        }
+      ],
+      "persona": "Write in the Follow-up field only. Be polite, short and concrete. Never invent a price.",
+      "script": ""
+    }
+  ],
+  "cards": [
+    {
+      "agent": {
+        "awake": true,
+        "level": 2,
+        "persona": "You write polite follow-ups for quotes. You never invent a price.",
+        "speed": "fast"
+      },
+      "background": 2,
+      "content": {
+        "3": "Dupont",
+        "4": "Tap replacement,1,85\nPipe joint,2,32.5",
+        "5": "",
+        "6": "",
+        "7": "",
+        "8": "",
+        "9": ""
+      },
+      "id": 10,
+      "ink": {},
+      "name": "Dupont",
+      "parts": [
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 11,
+          "kind": "button",
+          "label": "Add line",
+          "name": "Add line",
+          "rect": [
+            16,
+            320,
+            120,
+            28
+          ],
+          "script": "on mouseUp\n  if field \"New\" is empty then\n    exit mouseUp\n  end if\n  put field \"New\" & return after field \"Lines\"\n  put empty into field \"New\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 12,
+          "kind": "button",
+          "label": "Total",
+          "name": "Total",
+          "rect": [
+            152,
+            320,
+            120,
+            28
+          ],
+          "script": "on mouseUp\n  put 0 into total\n  repeat for each line row in field \"Lines\"\n    add item 2 of row * item 3 of row to total\n  end repeat\n  put round(total, 2) into field \"Subtotal\"\n  put round(total * 0.1, 2) into field \"VAT\"\n  put round(total * 1.1, 2) into field \"Total\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 13,
+          "kind": "button",
+          "label": "Draft",
+          "name": "Draft",
+          "rect": [
+            288,
+            320,
+            120,
+            28
+          ],
+          "script": "on mouseUp\n  consult agent with \"Write a polite follow-up for this quote.\"\n  put it into field \"Follow-up\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 14,
+          "kind": "button",
+          "label": "Next client",
+          "name": "Next client",
+          "rect": [
+            16,
+            8,
+            120,
+            24
+          ],
+          "script": "on mouseUp\n  go next card\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        }
+      ],
+      "script": ""
+    },
+    {
+      "agent": {
+        "awake": true,
+        "level": 2,
+        "persona": "You write polite follow-ups for quotes. You never invent a price.",
+        "speed": "fast"
+      },
+      "background": 2,
+      "content": {
+        "3": "Martin",
+        "4": "Boiler service,1,140",
+        "5": "",
+        "6": "",
+        "7": "",
+        "8": "",
+        "9": ""
+      },
+      "id": 20,
+      "ink": {},
+      "name": "Martin",
+      "parts": [
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 21,
+          "kind": "button",
+          "label": "Add line",
+          "name": "Add line",
+          "rect": [
+            16,
+            320,
+            120,
+            28
+          ],
+          "script": "on mouseUp\n  if field \"New\" is empty then\n    exit mouseUp\n  end if\n  put field \"New\" & return after field \"Lines\"\n  put empty into field \"New\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 22,
+          "kind": "button",
+          "label": "Total",
+          "name": "Total",
+          "rect": [
+            152,
+            320,
+            120,
+            28
+          ],
+          "script": "on mouseUp\n  put 0 into total\n  repeat for each line row in field \"Lines\"\n    add item 2 of row * item 3 of row to total\n  end repeat\n  put round(total, 2) into field \"Subtotal\"\n  put round(total * 0.1, 2) into field \"VAT\"\n  put round(total * 1.1, 2) into field \"Total\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 23,
+          "kind": "button",
+          "label": "Draft",
+          "name": "Draft",
+          "rect": [
+            288,
+            320,
+            120,
+            28
+          ],
+          "script": "on mouseUp\n  consult agent with \"Write a polite follow-up for this quote.\"\n  put it into field \"Follow-up\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 24,
+          "kind": "button",
+          "label": "Previous client",
+          "name": "Previous client",
+          "rect": [
+            16,
+            8,
+            120,
+            24
+          ],
+          "script": "on mouseUp\n  go previous card\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        }
+      ],
+      "script": ""
+    },
+    {
+      "agent": null,
+      "background": null,
+      "content": {},
+      "id": 30,
+      "ink": {},
+      "name": "How this works",
+      "parts": [
+        {
+          "id": 31,
+          "kind": "field",
+          "locked": true,
+          "multiline": true,
+          "name": "Notes",
+          "rect": [
+            16,
+            40,
+            480,
+            120
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "Each client is a card. Type a line as \"label,quantity,price\" in field New, press \"Add line\", then \"Total\" to compute the subtotal, the 10% VAT and the total. The Total button holds a script you can read: no AI is involved once it is written.",
+          "visible": true
+        },
+        {
+          "id": 32,
+          "kind": "field",
+          "locked": true,
+          "multiline": true,
+          "name": "Script",
+          "rect": [
+            16,
+            168,
+            480,
+            140
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "on mouseUp\n  put 0 into total\n  repeat for each line row in field \"Lines\"\n    add item 2 of row * item 3 of row to total\n  end repeat\n  put round(total, 2) into field \"Subtotal\"\n  put round(total * 0.1, 2) into field \"VAT\"\n  put round(total * 1.1, 2) into field \"Total\"\nend mouseUp",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 33,
+          "kind": "button",
+          "label": "Open the first client",
+          "name": "Open the first client",
+          "rect": [
+            16,
+            316,
+            200,
+            28
+          ],
+          "script": "on mouseUp\n  go to card \"Dupont\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        }
+      ],
+      "script": ""
+    }
+  ],
+  "currentCardId": 30,
+  "format": "cardwake/1",
+  "name": "Quotes",
+  "nextId": 40,
+  "persona": "A quote tool for a self-employed tradesperson. One card per client. Lines are \"label,quantity,price\" separated by commas.",
+  "provenance": {
+    "kind": "created"
+  },
+  "script": "",
+  "settings": {
+    "agentInputTokensPerSession": 400000,
+    "agentMaxIterations": 6,
+    "agentMaxOutputTokens": 2000,
+    "agentQueueLength": 20,
+    "agentTimeoutMs": 30000,
+    "agentTurnsPerAction": 8,
+    "agentTurnsPerSession": 60,
+    "cardViewChars": 8000,
+    "fieldViewChars": 2000,
+    "hopBudget": 3,
+    "maxMessageDepth": 50,
+    "maxSteps": 100000,
+    "maxWaitMs": 5000,
+    "tickSeconds": 0
+  }
+}

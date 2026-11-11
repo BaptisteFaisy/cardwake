@@ -1,2 +1,8 @@
 # Exceptions documentées à la règle < 500 lignes / < 50 lignes par fonction.
 # Une ligne = un chemin suivi par git, tel quel.
+
+# Fichiers vendored du pipeline CI (hérités du gabarit hermes, modifiés à la
+# marge pour brancher le routeur de modèles) : la règle des 500 lignes ne
+# s'applique pas à du code qu'on ne réécrit pas.
+.github/fireworks/conflict_agent.py
+.github/fireworks/scope_agent.py

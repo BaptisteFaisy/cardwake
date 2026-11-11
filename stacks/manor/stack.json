@@ -1,0 +1,243 @@
+{
+  "backgrounds": [
+    {
+      "id": 2,
+      "name": "Character",
+      "parts": [
+        {
+          "id": 3,
+          "kind": "field",
+          "locked": false,
+          "multiline": false,
+          "name": "Mood",
+          "rect": [
+            16,
+            40,
+            200,
+            24
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "id": 4,
+          "kind": "field",
+          "locked": false,
+          "multiline": true,
+          "name": "Memory",
+          "rect": [
+            16,
+            72,
+            300,
+            120
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "id": 5,
+          "kind": "field",
+          "locked": true,
+          "multiline": true,
+          "name": "Says",
+          "rect": [
+            16,
+            200,
+            480,
+            60
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        }
+      ],
+      "persona": "Write what you learn in field Memory. Never leave your room. Answer in one or two sentences.",
+      "script": ""
+    }
+  ],
+  "cards": [
+    {
+      "agent": {
+        "awake": true,
+        "level": 2,
+        "persona": "You guard the front door. You distrust strangers. You never leave the hall.",
+        "speed": "fast"
+      },
+      "background": 2,
+      "content": {
+        "3": "bored",
+        "4": "Nobody came today.",
+        "5": ""
+      },
+      "id": 10,
+      "ink": {},
+      "name": "Guard",
+      "parts": [
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 11,
+          "kind": "button",
+          "label": "Show the amulet",
+          "name": "Show the amulet",
+          "rect": [
+            16,
+            280,
+            160,
+            28
+          ],
+          "script": "on mouseUp\n  consult agent with \"The visitor shows you a silver amulet.\"\n  put it into field \"Says\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 12,
+          "kind": "button",
+          "label": "Go to the kitchen",
+          "name": "Go to the kitchen",
+          "rect": [
+            192,
+            280,
+            160,
+            28
+          ],
+          "script": "on mouseUp\n  go to card \"Cook\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        }
+      ],
+      "script": ""
+    },
+    {
+      "agent": {
+        "awake": true,
+        "level": 2,
+        "persona": "You cook for the house. You hear everything and forget nothing.",
+        "speed": "fast"
+      },
+      "background": 2,
+      "content": {
+        "3": "calm",
+        "4": "The kitchen is quiet tonight.",
+        "5": ""
+      },
+      "id": 20,
+      "ink": {},
+      "name": "Cook",
+      "parts": [
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 21,
+          "kind": "button",
+          "label": "Ask about the key",
+          "name": "Ask about the key",
+          "rect": [
+            16,
+            280,
+            160,
+            28
+          ],
+          "script": "on mouseUp\n  consult agent with \"A stranger is asking about the silver key.\"\n  put it into field \"Says\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 22,
+          "kind": "button",
+          "label": "Go to the hall",
+          "name": "Go to the hall",
+          "rect": [
+            192,
+            280,
+            160,
+            28
+          ],
+          "script": "on mouseUp\n  go to card \"Guard\"\nend mouseUp\n",
+          "style": "plain",
+          "visible": true
+        }
+      ],
+      "script": ""
+    },
+    {
+      "agent": null,
+      "background": null,
+      "content": {},
+      "id": 30,
+      "ink": {},
+      "name": "How this works",
+      "parts": [
+        {
+          "id": 31,
+          "kind": "field",
+          "locked": true,
+          "multiline": true,
+          "name": "Notes",
+          "rect": [
+            16,
+            40,
+            480,
+            220
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "This card hosts an agent: a persona, a level and nothing else. Its only memory is the card itself, written in field Memory, which you can read and edit.\n\nOpen the button \"Show the amulet\" on the Guard card to read its script, then open the journal to see the messages travelling between cards.",
+          "visible": true
+        },
+        {
+          "id": 32,
+          "kind": "field",
+          "locked": true,
+          "multiline": true,
+          "name": "Script",
+          "rect": [
+            16,
+            268,
+            480,
+            60
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "on mouseUp\n  consult agent with \"The visitor shows you a silver amulet.\"\n  put it into field \"Says\"\nend mouseUp",
+          "visible": true
+        }
+      ],
+      "script": ""
+    }
+  ],
+  "currentCardId": 30,
+  "format": "cardwake/1",
+  "name": "The Manor",
+  "nextId": 40,
+  "persona": "A haunted manor, one stormy night in 1987. Characters never leave their room. They speak in one or two sentences.",
+  "provenance": {
+    "kind": "created"
+  },
+  "script": "",
+  "settings": {
+    "agentInputTokensPerSession": 400000,
+    "agentMaxIterations": 6,
+    "agentMaxOutputTokens": 2000,
+    "agentQueueLength": 20,
+    "agentTimeoutMs": 30000,
+    "agentTurnsPerAction": 8,
+    "agentTurnsPerSession": 60,
+    "cardViewChars": 8000,
+    "fieldViewChars": 2000,
+    "hopBudget": 3,
+    "maxMessageDepth": 50,
+    "maxSteps": 100000,
+    "maxWaitMs": 5000,
+    "tickSeconds": 0
+  }
+}
