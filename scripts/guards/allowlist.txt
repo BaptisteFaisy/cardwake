@@ -1,0 +1,2 @@
+# Exceptions documentées à la règle < 500 lignes / < 50 lignes par fonction.
+# Une ligne = un chemin suivi par git, tel quel.

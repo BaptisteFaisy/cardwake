@@ -1,2 +1,12 @@
 __pycache__/
 *.py[cod]
+
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+.DS_Store
+*.log
+.env
+.env.local

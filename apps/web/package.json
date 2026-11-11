@@ -1,0 +1,20 @@
+{
+  "name": "@cardwake/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@cardwake/agent": "*",
+    "@cardwake/lang": "*",
+    "@cardwake/model": "*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.24.0"
+  }
+}

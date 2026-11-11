@@ -1,0 +1,21 @@
+{
+  "name": "@cardwake/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run --dir ."
+  },
+  "dependencies": {
+    "@cardwake/lang": "*",
+    "@cardwake/model": "*",
+    "@cardwake/agent": "*"
+  },
+  "bin": {
+    "cardwake": "./src/main.ts"
+  }
+}
