@@ -53,7 +53,7 @@ jobs:
           npm run build
           test -f apps/web/dist/index.html
 
-      - name: Garde : aucune construction dangereuse dans le site produit
+      - name: "Garde : aucune construction dangereuse dans le site produit"
         shell: bash
         run: |
           if grep -rEl 'eval\(|new Function|innerHTML' apps/web/dist 2>/dev/null; then
