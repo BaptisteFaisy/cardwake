@@ -47,6 +47,37 @@ export type FieldPartViewProps = {
   onSelect: () => void;
 };
 
+type FieldControl = {
+  value: string;
+  readOnly: boolean;
+  "aria-label": string;
+  onFocus: () => void;
+  onBlur: () => void;
+  onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+};
+
+/**
+ * Propriétés communes au `<input>` et au `<textarea>` : un seul exemplaire,
+ * pour que les deux rendus restent strictement identiques côté accessibilité.
+ */
+function controlProps(
+  part: FieldPart,
+  draft: string,
+  lockedInPlay: boolean,
+  onSelect: () => void,
+  commit: () => void,
+  setDraft: (value: string) => void,
+): FieldControl {
+  return {
+    value: draft,
+    readOnly: lockedInPlay,
+    "aria-label": part.name,
+    onFocus: onSelect,
+    onBlur: commit,
+    onChange: (event) => setDraft(event.target.value),
+  };
+}
+
 export function FieldPartView(props: FieldPartViewProps): JSX.Element {
   const { part, text, inkedByAgent, lockedInPlay, buildMode, selected, onCommit, onSelect } = props;
   // Brouillon local : une transaction par saisie validée, pas par frappe.
@@ -60,15 +91,7 @@ export function FieldPartView(props: FieldPartViewProps): JSX.Element {
     if (draft !== text) onCommit(draft);
   };
 
-  const shared = {
-    value: draft,
-    readOnly: lockedInPlay,
-    "aria-label": part.name,
-    onFocus: onSelect,
-    onBlur: commit,
-    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setDraft(event.target.value),
-  };
+  const shared = controlProps(part, draft, lockedInPlay, onSelect, commit, setDraft);
 
   return (
     <div
