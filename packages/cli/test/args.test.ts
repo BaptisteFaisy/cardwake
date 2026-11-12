@@ -51,14 +51,14 @@ describe("parseArgs", () => {
   });
 
   it("lists every command of the lot", () => {
-    expect(COMMANDS).toEqual(["live", "validate", "paraphrase", "cassette", "run"]);
+    expect(COMMANDS).toEqual(["live", "validate", "paraphrase", "cassette", "run", "mcp"]);
   });
 });
 
 describe("usage", () => {
   it("is in English and names every command and exit code", () => {
     const text = usage();
-    for (const word of ["cardwake", "live", "validate", "paraphrase", "cassette", "run", "--click", "--seed", "--object", "--card", "--say", "--relay", "--json"]) {
+    for (const word of ["cardwake", "live", "validate", "paraphrase", "cassette", "run", "mcp", "--click", "--seed", "--object", "--card", "--say", "--relay", "--json"]) {
       expect(text).toContain(word);
     }
     expect(text).toContain("Exit codes: 0 success, 1 invalid stack, 2 not available, 3 wrong usage.");

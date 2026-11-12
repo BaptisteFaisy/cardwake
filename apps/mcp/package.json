@@ -1,0 +1,15 @@
+{
+  "name": "@cardwake/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Serveur MCP du moteur Cardwake : lecture et simulation de piles, sans réseau, sans clé, sans modèle.",
+  "exports": { ".": "./src/server.ts" },
+  "bin": { "cardwake-mcp": "./src/server.ts" },
+  "scripts": { "test": "vitest run --dir ." },
+  "dependencies": {
+    "@cardwake/lang": "*",
+    "@cardwake/model": "*"
+  }
+}
