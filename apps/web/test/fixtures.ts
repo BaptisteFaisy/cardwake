@@ -55,18 +55,10 @@ export function makeEngine(stack?: Stack, options: TestEngineOptions = {}): Test
 
 /**
  * Attend la fin d'une action asynchrone : le moteur émet `changed` quand le
- * dispatch est réglé. À appeler AVANT l'action.
+ * dispatch est réglé. À appeler AVANT l'action. L'implémentation vit dans le
+ * moteur (`model-engine`), partagée avec les preuves du site.
  */
-export function settled(engine: ModelEngineApi): Promise<void> {
-  return new Promise((resolve) => {
-    const off = engine.subscribe((event) => {
-      if (event.type === "changed") {
-        off();
-        resolve();
-      }
-    });
-  });
-}
+export { settled } from "../src/engine/model-engine";
 
 /** Le texte courant d'un champ, lu dans la pile (fond ou carte). */
 export function textOf(stack: Stack, cardId: number, partId: number): string {
