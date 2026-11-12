@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { parseStackFile } from "@cardwake/model";
 import type { Stack } from "@cardwake/model";
 
-export const COMMANDS = ["live", "validate", "paraphrase", "cassette", "run"] as const;
+export const COMMANDS = ["live", "validate", "paraphrase", "cassette", "run", "mcp"] as const;
 
 export type CliArgs = {
   command: string;
@@ -48,6 +48,7 @@ export function usage(): string {
     "  cardwake cassette record <stack>    refused: recording costs money, it stays human",
     "  cardwake run <stack> --click <Card/Button> [--seed n]   play one click",
   "  cardwake live <stack> --card <Name> --say <text>      ask a REAL model through the local relay",
+  "  cardwake mcp                             start the project's MCP server (developer tool)",
     "",
     "Options: --click <Card/Button>  --object <Card/Part>  --card <Name>  --say <text>  --relay <url>  --seed <n>  --json  -h|--help",
     "Exit codes: 0 success, 1 invalid stack, 2 not available, 3 wrong usage.",
