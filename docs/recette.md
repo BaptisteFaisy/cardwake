@@ -26,7 +26,7 @@ prouvées au niveau des paquets, en attente du branchement applicatif).
 | 14 | La présence de `.kiro` | **cochée** | `.kiro/specs/` (12 specs), `.kiro/hooks/hooks.json` (9 hooks), `.kiro/agents/` (3 agents), `.kiro/steering/`. Le garde `limits`/présence de `scripts/guards/run_all.py` vérifie `.kiro/` en CI. |
 | 15 | La licence | **non cochée** | Aucun fichier `LICENSE` à la racine du dépôt (`ls LICENSE*` → vide). Choix de licence à faire, puis fichier à ajouter. |
 | 16 | Le README | **cochée** | `README.md` à la racine, en anglais, avec la promesse du produit (« every card can host an AI agent, and that agent can never do more than the level a human gave it »). |
-| 17 | L'adresse en ligne | **cochée** | Site publié sur GitHub Pages : `https://baptistefaisy.github.io/cardwake/`, déployé à chaque push sur `main` par `.github/workflows/pages.yml` (build + artefact + garde « aucune ressource distante »). |
+| 17 | L'adresse en ligne | **cochée** | Site publié sur GitHub Pages : `https://tradoooo.github.io/cardwake/`, déployé à chaque push sur `main` par `.github/workflows/pages.yml` (build + artefact + garde « aucune ressource distante »). |
 | 18 | La vidéo | **non cochée** | Le script minuté est livré (`docs/video-script.md`, 2:58, plans + voix off, contraintes marques/musique respectées). Le tournage et le montage restent à faire ; les plans « manoir », « journal » et « phrase → script » attendent `dispatch.ts`/`loop.ts`/`write-script.ts` pour être filmés en vrai. |
 
 ## Commandes de vérification utilisées
