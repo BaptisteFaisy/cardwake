@@ -1,18 +1,15 @@
 /**
- * Le moteur réel du site, construit sur `@cardwake/model` (11.1, 11.8).
+ * Le moteur réel du site, construit sur `@cardwake/model` (11.1, 11.8). Trois
+ * règles le tiennent : chaque action humaine ouvre une transaction du journal
+ * avec une cause en anglais ; toute opération passe par `authorizeOp` (en mode
+ * Jouer la structure est refusée, CAR-F-05, un champ verrouillé refuse la
+ * saisie humaine, CAR-F-06) ; horloge **injectée** et graine fournie — ni
+ * `Date.now()` ni `Math.random()` n'apparaissent ici.
  *
- * Trois règles le tiennent :
- * - chaque action humaine ouvre une transaction (`begin`/`record`/`commit`)
- *   avec l'acteur `{kind:"human", mode}` et une cause en anglais ;
- * - toute opération passe par `authorizeOp` : en mode Jouer, la structure est
- *   refusée avec la raison (CAR-F-05) et un champ verrouillé refuse la saisie
- *   humaine (CAR-F-06) ;
- * - l'horloge est **injectée** et la graine fournie : ni `Date.now()` ni
- *   `Math.random()` n'apparaissent ici, le moteur reste déterministe en test.
- *
- * L'exécution des scripts n'existe pas encore (`host.ts`/`dispatch.ts` sont en
- * cours d'écriture par un autre lot) : un clic sur un bouton à script ne
- * l'exécute pas, il pose l'état « script not wired yet ».
+ * L'exécution des scripts passe par l'adaptateur de dispatch (lot C5b) : un
+ * clic sur un bouton à script exécute le handler `mouseUp` via le
+ * `Dispatcher`, resynchronise la pile et notifie les abonnés (`changed`) ;
+ * `click(partId): void` reste synchrone, le travail asynchrone est interne.
  */
 
 import { ActionBudgetTracker, SessionBudgetTracker } from "@cardwake/agent";
@@ -28,8 +25,10 @@ import {
   currentInk,
   currentText,
 } from "@cardwake/model";
-import type { Card, Op, Part, Rect, Stack, Verdict } from "@cardwake/model";
+import type { Card, DispatchResult, Op, Part, Rect, Stack, Verdict } from "@cardwake/model";
 import type { BudgetView, CardwakeEngine, EngineEvent, JournalView, Mode, Refusal } from "./types";
+import { createDispatchAdapter, noticeOf, runDispatch, stepSeed } from "./dispatch-adapter";
+import type { DispatchAdapter, DispatchRequest } from "./dispatch-adapter";
 
 export type ModelEngineOptions = {
   /** Horloge injectée : rend un horodatage ISO (CAR-F-17). */
@@ -41,16 +40,10 @@ export type ModelEngineOptions = {
 /** Cible d'un champ sur une carte : propre à la carte, ou champ de son fond. */
 type FieldTarget = { backgroundId?: number; locked: boolean; part: Part };
 
-/** Générateur linéaire congruentiel : déterministe, sans `Math.random()`. */
-function stepSeed(seed: number): number {
-  return (Math.imul(seed, 1103515245) + 12345) >>> 0;
-}
-
 /**
- * Valeur texte actuelle d'une propriété d'élément. Le modèle lit cela dans
- * `ops.ts`, mais sa fonction n'est pas exportée et le contrat est figé :
- * miroir local, borné aux propriétés que l'inspecteur édite. `before` doit
- * être exact pour que l'inverse calculé par le journal ramène à l'état d'avant.
+ * Valeur texte actuelle d'une propriété d'élément : miroir local de `ops.ts`
+ * (fonction non exportée, contrat figé), borné aux propriétés de l'inspecteur.
+ * `before` doit être exact pour que l'inverse du journal ramène à l'état d'avant.
  */
 function readPropText(part: Part, prop: PropName): string {
   if (prop === "name") return part.name;
@@ -86,9 +79,7 @@ class ModelEngine implements CardwakeEngine {
     this.seed = options.seed >>> 0;
   }
 
-  // ------------------------------------------------------------------
-  // Ouverture et lecture
-  // ------------------------------------------------------------------
+  // ---- Ouverture et lecture ----
 
   openStack(stack: Stack): void {
     this.stack = stack;
@@ -122,9 +113,7 @@ class ModelEngine implements CardwakeEngine {
     this.emit({ type: "mode-changed", mode });
   }
 
-  // ------------------------------------------------------------------
-  // Actions humaines
-  // ------------------------------------------------------------------
+  // ---- Actions humaines ----
 
   navigate(cardId: number | null): void {
     if (this.stack === null) return;
@@ -144,9 +133,17 @@ class ModelEngine implements CardwakeEngine {
     this.emit({ type: "clicked", partId });
     if (part === undefined || part.kind !== "button") return;
     if (part.script.trim() === "") return;
-    // Le script existe mais l'exécution n'est pas encore branchée (lot C6).
-    this.say("script not wired yet");
-    this.emit({ type: "script-not-wired", partId });
+    // Le bouton a un script : l'adaptateur l'exécute réellement (lot C5b).
+    this.dispatch({ kind: "click", cardId: card.id, partId });
+  }
+
+  /** Barre de discussion : l'humain parle à l'agent de la carte affichée. Hors
+   * contrat figé, exposée par `createModelEngine` ; asynchrone, comme `click`. */
+  chat(text: string): void {
+    const card = this.currentCard();
+    if (this.stack === null || card === null) return;
+    this.action = new ActionBudgetTracker(this.stack.settings);
+    this.dispatch({ kind: "chat", cardId: card.id, text });
   }
 
   editField(partId: number, text: string): void {
@@ -170,9 +167,7 @@ class ModelEngine implements CardwakeEngine {
     this.applyAuthorized(`human edit of field "${target.part.name}"`, [op]);
   }
 
-  // ------------------------------------------------------------------
-  // Construction (mode Fabriquer seulement, CAR-F-02, CAR-F-05)
-  // ------------------------------------------------------------------
+  // ---- Construction (mode Fabriquer seulement, CAR-F-02, CAR-F-05) ----
 
   addCard(name: string): void {
     const pre = this.stack;
@@ -254,15 +249,12 @@ class ModelEngine implements CardwakeEngine {
     this.applyAuthorized(`human deletion of "${part.name}"`, [op]);
   }
 
-  // ------------------------------------------------------------------
-  // Réception (7.10, CAR-F-52)
-  // ------------------------------------------------------------------
+  // ---- Réception (7.10, CAR-F-52) ----
 
   /**
-   * Réveille les agents d'une pile reçue. Le niveau n'est pas touché : c'est
-   * `effectiveLevel` du modèle qui le plafonne à 2 tant que la pile n'est pas
-   * déclarée fiable. L'opération passe par `authorizeOp`, donc elle n'aboutit
-   * qu'en mode Fabriquer — l'écran de réception bascule dans ce mode.
+   * Réveille les agents d'une pile reçue ; `effectiveLevel` plafonne le niveau
+   * à 2 tant que la pile n'est pas déclarée fiable. Passe par `authorizeOp` :
+   * n'aboutit qu'en mode Fabriquer — l'écran de réception bascule dans ce mode.
    */
   wakeAgents(): void {
     if (this.stack === null) return;
@@ -281,11 +273,8 @@ class ModelEngine implements CardwakeEngine {
     this.applyAuthorized("human wakes the agents of a received stack", ops);
   }
 
-  /**
-   * « Je fais confiance à cette pile » : second geste, distinct du réveil.
-   * La provenance n'a pas d'opération réversible dans le modèle : ce geste
-   * n'entre donc pas dans le journal, il change seulement la confiance.
-   */
+  /** « Je fais confiance à cette pile » : second geste, distinct du réveil. La
+   * provenance n'a pas d'opération réversible : hors journal, change la confiance. */
   trustStack(): void {
     const stack = this.stack;
     if (stack === null || stack.provenance.kind !== "received") return;
@@ -294,9 +283,7 @@ class ModelEngine implements CardwakeEngine {
     this.emit({ type: "changed", stack: this.stack });
   }
 
-  // ------------------------------------------------------------------
-  // Journal et budget
-  // ------------------------------------------------------------------
+  // ---- Journal et budget ----
 
   undo(): void {
     if (this.stack === null) return;
@@ -357,9 +344,7 @@ class ModelEngine implements CardwakeEngine {
     return this.notice;
   }
 
-  // ------------------------------------------------------------------
-  // Abonnements
-  // ------------------------------------------------------------------
+  // ---- Abonnements ----
 
   subscribe(listener: (event: EngineEvent) => void): () => void {
     this.listeners.add(listener);
@@ -374,9 +359,7 @@ class ModelEngine implements CardwakeEngine {
     this.emit({ type: "disposed" });
   }
 
-  // ------------------------------------------------------------------
-  // Mécanique interne
-  // ------------------------------------------------------------------
+  // ---- Mécanique interne ----
 
   /** Le mode humain, dans le vocabulaire du modèle (`browse`/`author`). */
   private humanMode(): "browse" | "author" {
@@ -397,9 +380,8 @@ class ModelEngine implements CardwakeEngine {
 
   /**
    * Autorise puis applique : chaque opération passe par `authorizeOp`, la
-   * première refusée arrête tout et sa raison est affichée (CAR-F-05/06).
-   * `nextIdAfter` garde le compteur d'identifiants avancé même en cas de
-   * refus : un identifiant alloué n'est jamais réutilisé (CAR-F-04).
+   * première refusée arrête tout (CAR-F-05/06). `nextIdAfter` garde le compteur
+   * avancé même en cas de refus : un identifiant alloué n'est jamais réutilisé.
    */
   private applyAuthorized(cause: string, ops: Op[], nextIdAfter?: number): void {
     if (this.stack === null || ops.length === 0) return;
@@ -427,6 +409,46 @@ class ModelEngine implements CardwakeEngine {
   private nextSeed(): number {
     this.seed = stepSeed(this.seed);
     return this.seed;
+  }
+
+  /** Lance l'exécution asynchrone via l'adaptateur : journal, graine et horloge du moteur. */
+  private dispatch(request: DispatchRequest): void {
+    if (this.stack === null) return;
+    const adapter = createDispatchAdapter({
+      stack: this.stack,
+      journal: this.journalInstance,
+      seed: this.nextSeed(),
+      clock: this.clock,
+    });
+    runDispatch(adapter, request)
+      .then((result) => this.settleDispatch(adapter, result))
+      .catch(() => this.say("The script failed and its transaction was rolled back."));
+  }
+
+  /** Fin d'une exécution : pile resynchronisée, budget, refus ou avis, `changed`. */
+  private settleDispatch(adapter: DispatchAdapter, result: DispatchResult): void {
+    this.stack = adapter.current;
+    this.redoable = false;
+    this.absorbBudget(result);
+    const refused = result.refusals.find((verdict) => !verdict.allow);
+    if (refused !== undefined && !refused.allow) {
+      this.refuse(refused.reason, refused.rule);
+    } else {
+      this.notice = noticeOf(result);
+      this.refusal = null;
+    }
+    this.emit({ type: "changed", stack: this.stack });
+  }
+
+  /** Reporte les sauts et tours consommés par l'adaptateur dans les jauges. */
+  private absorbBudget(result: DispatchResult): void {
+    const hopBudget = this.stack?.settings.hopBudget ?? 0;
+    const spentHops = Math.max(0, hopBudget - result.hopsLeft);
+    for (let hop = 0; hop < spentHops; hop += 1) this.action?.consumeHop();
+    for (let turn = 0; turn < result.agentTurns; turn += 1) {
+      this.action?.consumeTurn();
+      this.session?.consumeTurn();
+    }
   }
 
   private refuse(reason: string, rule: string): void {
@@ -466,7 +488,13 @@ class ModelEngine implements CardwakeEngine {
   }
 }
 
+/** Le moteur réel : le contrat figé, plus la barre de discussion. */
+export type ModelEngineApi = CardwakeEngine & {
+  /** Parle à l'agent de la carte affichée (asynchrone en interne). */
+  chat(text: string): void;
+};
+
 /** Fabrique du moteur réel : c'est elle que le site et les tests utilisent. */
-export function createModelEngine(options: ModelEngineOptions): CardwakeEngine {
+export function createModelEngine(options: ModelEngineOptions): ModelEngineApi {
   return new ModelEngine(options);
 }
