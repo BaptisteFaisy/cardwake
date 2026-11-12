@@ -10,6 +10,8 @@ export * from "./errors";
 export * from "./lexer";
 export * from "./parser";
 export * from "./print";
+export * from "./paraphrase";
+export * from "./check";
 export * from "./values";
 export * from "./chunks";
 export * from "./interpreter";
