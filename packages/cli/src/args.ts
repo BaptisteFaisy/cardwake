@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { parseStackFile } from "@cardwake/model";
 import type { Stack } from "@cardwake/model";
 
-export const COMMANDS = ["validate", "paraphrase", "cassette", "run"] as const;
+export const COMMANDS = ["live", "validate", "paraphrase", "cassette", "run"] as const;
 
 export type CliArgs = {
   command: string;
@@ -19,6 +19,12 @@ export type CliArgs = {
   positionals: string[];
   click: string | null;
   object: string | null;
+  /** Carte à qui parler (commande `live`). */
+  card?: string | null;
+  /** Ce qu'on dit à la carte (commande `live`). */
+  say?: string | null;
+  /** Adresse du relais local (commande `live`). */
+  relay?: string | null;
   seed: number | null;
   json: boolean;
   help: boolean;
@@ -41,8 +47,9 @@ export function usage(): string {
     "  cardwake cassette verify [stack...] list the recordings that no longer match",
     "  cardwake cassette record <stack>    refused: recording costs money, it stays human",
     "  cardwake run <stack> --click <Card/Button> [--seed n]   play one click",
+  "  cardwake live <stack> --card <Name> --say <text>      ask a REAL model through the local relay",
     "",
-    "Options: --click <Card/Button>  --object <Card/Part>  --seed <n>  --json  -h|--help",
+    "Options: --click <Card/Button>  --object <Card/Part>  --card <Name>  --say <text>  --relay <url>  --seed <n>  --json  -h|--help",
     "Exit codes: 0 success, 1 invalid stack, 2 not available, 3 wrong usage.",
   ].join("\n");
 }
@@ -57,7 +64,7 @@ function parseSeed(raw: string): number | null {
 export function parseArgs(argv: readonly string[]): ParseResult {
   const args: CliArgs = {
     command: "", sub: null, positionals: [],
-    click: null, object: null, seed: null, json: false, help: false,
+    click: null, object: null, card: null, say: null, relay: null, seed: null, json: false, help: false,
   };
   const rest = [...argv];
   while (rest.length > 0) {
@@ -73,11 +80,14 @@ export function parseArgs(argv: readonly string[]): ParseResult {
     const inline = split >= 0 ? token.slice(split + 1) : null;
     if (name === "--help" || name === "-h") args.help = true;
     else if (name === "--json") args.json = true;
-    else if (name === "--click" || name === "--object" || name === "--seed") {
+    else if (name === "--click" || name === "--object" || name === "--seed" || name === "--card" || name === "--say" || name === "--relay") {
       const value = inline ?? rest.shift();
       if (value === undefined) return { ok: false, error: `option ${name} needs a value` };
       if (name === "--click") args.click = value;
       else if (name === "--object") args.object = value;
+      else if (name === "--card") args.card = value;
+      else if (name === "--say") args.say = value;
+      else if (name === "--relay") args.relay = value;
       else {
         const seed = parseSeed(value);
         if (seed === null) return { ok: false, error: "seed must be a whole number" };

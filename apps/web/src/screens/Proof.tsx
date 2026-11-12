@@ -1,7 +1,7 @@
 /**
  * L'écran des preuves : ce que le projet a prouvé (les 29 preuves de la
  * campagne, déjà jouées), et ce qui se recalcule maintenant dans le
- * navigateur (six démonstrations jouées par le moteur réel — sans modèle,
+ * navigateur (sept démonstrations jouées par le moteur réel — sans modèle,
  * sans réseau, sans clé).
  *
  * L'écran ne calcule rien lui-même : il appelle les fonctions pures de
@@ -15,10 +15,10 @@ import { useEffect, useState } from "react";
 import { t } from "../i18n";
 import { CAMPAIGN_PROOFS } from "../data/proofs";
 import type { CampaignProof } from "../data/proofs";
-import { demoManor, demoQuote, demoReplay, demoRights, demoSpy, demoUndo } from "../proofs";
+import { demoManor, demoQuote, demoRelay, demoReplay, demoRights, demoSpy, demoUndo } from "../proofs";
 import type { ProofDemo } from "../proofs";
 
-/** Les six démonstrations recalculées, dans l'ordre de l'écran. */
+/** Les sept démonstrations recalculées, dans l'ordre de l'écran. */
 const LIVE_DEMOS: { key: string; run: () => Promise<ProofDemo> }[] = [
   { key: "quote", run: demoQuote },
   { key: "manor", run: demoManor },
@@ -26,6 +26,7 @@ const LIVE_DEMOS: { key: string; run: () => Promise<ProofDemo> }[] = [
   { key: "rights", run: demoRights },
   { key: "replay", run: demoReplay },
   { key: "undo", run: demoUndo },
+  { key: "relay", run: demoRelay },
 ];
 
 export function Proof(): JSX.Element {
@@ -114,7 +115,7 @@ function LiveEntry({ demoKey, result }: { demoKey: string; result: ProofDemo }):
   return (
     <li>
       <h3>{t(`proof.demo.${demoKey}`)}</h3>
-      <Verdict ok={result.ok} />
+      <Verdict ok={result.ok} skipped={result.skipped === true} />
       <p>{t("proof.steps")}</p>
       <ol className="proof-lines">
         {result.lines.map((line, index) => (
@@ -127,9 +128,12 @@ function LiveEntry({ demoKey, result }: { demoKey: string; result: ProofDemo }):
   );
 }
 
-/** La pastille de verdict : vérifié, ou échoué. */
-function Verdict({ ok }: { ok: boolean }): JSX.Element {
-  return (
-    <span className="badge">{ok ? t("proof.verdict.verified") : t("proof.verdict.failed")}</span>
-  );
+/** La pastille de verdict : vérifié, échoué, ou sauté. */
+function Verdict({ ok, skipped }: { ok: boolean; skipped?: boolean }): JSX.Element {
+  const label = skipped === true
+    ? t("proof.verdict.skipped")
+    : ok
+      ? t("proof.verdict.verified")
+      : t("proof.verdict.failed");
+  return <span className="badge">{label}</span>;
 }

@@ -19,4 +19,5 @@ export * from "./gateway/http";
 export * from "./gateway/key";
 export * from "./gateway/relay";
 export * from "./gateway/router";
+export * from "./gateway/relay-local";
 export * from "./testing/fake-model";

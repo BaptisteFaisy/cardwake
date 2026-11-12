@@ -1,8 +1,10 @@
 /**
- * Le pont entre le `Dispatcher` et un vrai tour d'agent (7.5), en mode
- * enregistré : la passerelle est la cassette de la pile courante, jamais le
- * réseau. Le tour passe par `runAgentTurn`, avec l'hôte fourni par le
- * Dispatcher, les compteurs de budget du moteur et les réglages de la pile.
+ * Le pont entre le `Dispatcher` et un vrai tour d'agent (7.5), en trois modes
+ * d'accès : la cassette de la pile (`recorded`, le défaut), le relais local
+ * (`live`), ou l'un puis l'autre (`auto`).
+ *
+ * Le tour passe par `runAgentTurn`, avec l'hôte fourni par le Dispatcher, les
+ * compteurs de budget du moteur et les réglages de la pile.
  *
  * Budget honnête (CAR-P-15) : chaque appel de modèle réussi paie un tour
  * d'action et un tour de session ; un tour parti sans rien produire
@@ -13,13 +15,18 @@
  * réels, et le coût (appels, jetons) n'est reporté sur les vrais compteurs
  * qu'après coup, à l'image de ce qui a réellement tourné.
  *
- * Aucun `fetch`, aucune clé : la passerelle est toujours une cassette.
+ * **Repli honnête** : quand le relais ne répond pas (page publique qui ne
+ * peut pas joindre `127.0.0.1`, relais arrêté, plafond atteint), le tour est
+ * rejoué sur la cassette et l'avis lisible le dit. Une clé n'est jamais
+ * demandée ni conservée : le relais la détient, pas le navigateur (CAR-N-09).
  */
 
 import { ActionBudgetTracker, CassetteMiss, SessionBudgetTracker, runAgentTurn } from "@cardwake/agent";
 import type { LlmGateway, TurnContext, TurnOutcome } from "@cardwake/agent";
 import type { AgentTurnRequest, ModelHost, Stack, StackSettings } from "@cardwake/model";
 import { clampSettings } from "@cardwake/model";
+import { relayFailureOf } from "./relay-gateway";
+import type { RelayFailure } from "./relay-gateway";
 
 /**
  * L'avis lisible d'une situation sans enregistrement : le même texte que
@@ -27,22 +34,47 @@ import { clampSettings } from "@cardwake/model";
  */
 export const NO_RECORDING = new CassetteMiss("").message;
 
+/** L'avis quand le relais n'a pas répondu du tout. */
+export const RELAY_UNREACHABLE =
+  "the live relay is not reachable from this browser — the demo runs in recorded mode";
+
+/** L'avis quand le relais a atteint son plafond du jour. */
+export const RELAY_LIMIT =
+  "the live relay reached its daily limit — the demo runs in recorded mode";
+
+/** L'avis quand le relais a refusé la requête. */
+export const RELAY_REFUSED =
+  "the live relay refused the call — the demo runs in recorded mode";
+
+/** L'avis lisible d'un échec du relais. */
+export function noticeOfRelayFailure(failure: RelayFailure | null): string {
+  if (failure === "limit") return RELAY_LIMIT;
+  if (failure === "refused") return RELAY_REFUSED;
+  return RELAY_UNREACHABLE;
+}
+
 /** Ce dont le pont a besoin : la passerelle d'une pile et les compteurs du moteur. */
 export type AgentBridgeOptions = {
-  /** La passerelle d'une pile : la cassette de la démo, ou `null` (pas de tour). */
+  /** La passerelle principale d'une pile : le relais, ou la cassette. */
   gatewayOf: (stack: Stack) => LlmGateway | null;
+  /** La cassette de repli, jouée quand le relais ne répond pas. */
+  fallbackOf?: (stack: Stack) => LlmGateway | null;
+  /** Le relais était-il attendu pour ce tour ? */
+  relayExpected?: (stack: Stack) => boolean;
   /** Le compteur de session du moteur, relu à chaque tour. */
   session: () => SessionBudgetTracker | null;
   /** Le compteur d'action du moteur, relu à chaque tour. */
   action: () => ActionBudgetTracker | null;
 };
 
-/** Le pont branché sur le `Dispatcher` : un `onAgentTurn` et son nombre d'échecs. */
+/** Le pont branché sur le `Dispatcher` : un `onAgentTurn` et ses compteurs. */
 export type AgentBridge = {
   /** Le `onAgentTurn` du Dispatcher : rend toujours une réponse lisible. */
   onAgentTurn: (request: AgentTurnRequest, host: ModelHost) => Promise<string>;
   /** Tours partis sans rien produire : le moteur rend leurs sauts. */
   misses: number;
+  /** L'avis sur le repli du relais, s'il y en a eu un. */
+  notice: string | null;
 };
 
 /** Les deux compteurs réels d'un tour, tels que le moteur les porte. */
@@ -86,31 +118,79 @@ function replyOf(outcome: TurnOutcome): string {
   return outcome.refusal ?? NO_RECORDING;
 }
 
-/** Un tour d'agent complet : cassette de la pile, budgets honnêtes, avis lisible. */
+/** Un tour joué sur une passerelle donnée, avec les compteurs fantômes. */
+async function playOn(
+  request: AgentTurnRequest,
+  host: ModelHost,
+  gateway: LlmGateway,
+  trackers: EngineTrackers,
+  settings: StackSettings,
+): Promise<TurnOutcome> {
+  return runAgentTurn(request, {
+    stack: host.stack,
+    cardId: request.cardId,
+    gateway,
+    host,
+    session: shadowSession(trackers.session, settings),
+    action: shadowAction(trackers.action, settings),
+    settings,
+  } satisfies TurnContext);
+}
+
+/**
+ * Le relais a échoué : le tour est rejoué sur la cassette, et l'avis lisible
+ * dit pourquoi. Le coût du relais perdu n'est pas reporté : rien n'a été
+ * produit par ce côté-là.
+ */
+async function replayOnCassette(
+  bridge: AgentBridge,
+  request: AgentTurnRequest,
+  host: ModelHost,
+  fallback: LlmGateway,
+  trackers: EngineTrackers,
+  settings: StackSettings,
+): Promise<string> {
+  const outcome = await playOn(request, host, fallback, trackers, settings);
+  applyCost(trackers, outcome);
+  if (outcome.usage.calls === 0) {
+    bridge.misses += 1;
+    return outcome.refusal ?? NO_RECORDING;
+  }
+  return replyOf(outcome);
+}
+
+/** Un tour d'agent complet : cassette ou relais, budgets honnêtes, avis lisible. */
 async function runTurn(
   bridge: AgentBridge,
   options: AgentBridgeOptions,
   request: AgentTurnRequest,
   host: ModelHost,
 ): Promise<string> {
-  const gateway = options.gatewayOf(host.stack);
+  const stack = host.stack;
+  const gateway = options.gatewayOf(stack);
   const session = options.session();
   const action = options.action();
   if (gateway === null || session === null || action === null) {
     bridge.misses += 1;
     return NO_RECORDING;
   }
-  const settings = clampSettings(host.stack.settings);
-  const outcome = await runAgentTurn(request, {
-    stack: host.stack,
-    cardId: request.cardId,
-    gateway,
-    host,
-    session: shadowSession(session, settings),
-    action: shadowAction(action, settings),
-    settings,
-  } satisfies TurnContext);
-  applyCost({ session, action }, outcome);
+  const expected = options.relayExpected?.(stack) === true;
+  const trackers: EngineTrackers = { session, action };
+  // Le relais était attendu mais la cassette répond : on le dit quand même.
+  if (expected && gateway.mode !== "relay") bridge.notice = noticeOfRelayFailure(null);
+  const settings = clampSettings(stack.settings);
+  const outcome = await playOn(request, host, gateway, trackers, settings);
+  const failure = relayFailureOf(gateway);
+  if (failure !== null) {
+    const fallback = options.fallbackOf?.(stack) ?? null;
+    bridge.notice = noticeOfRelayFailure(failure);
+    if (fallback === null) {
+      bridge.misses += 1;
+      return outcome.refusal ?? NO_RECORDING;
+    }
+    return replayOnCassette(bridge, request, host, fallback, trackers, settings);
+  }
+  applyCost(trackers, outcome);
   if (outcome.usage.calls === 0) {
     bridge.misses += 1;
     return outcome.refusal ?? NO_RECORDING;
@@ -122,6 +202,7 @@ async function runTurn(
 export function createAgentBridge(options: AgentBridgeOptions): AgentBridge {
   const bridge: AgentBridge = {
     misses: 0,
+    notice: null,
     onAgentTurn: (request, host) => runTurn(bridge, options, request, host),
   };
   return bridge;
