@@ -18,6 +18,7 @@ const TEXTS: Record<string, string> = {
   "nav.reception": "Reception",
   "nav.settings": "Settings",
   "nav.spy": "Spy",
+  "nav.proof": "Proofs",
   "nav.backToShelf": "Back to the shelf",
   "mode.play": "Play",
   "mode.build": "Build",
@@ -172,6 +173,25 @@ const TEXTS: Record<string, string> = {
   "spy.refusals": "Refusals",
   "spy.refusalLine": "{reason} (rule: {rule})",
   "spy.none": "Nothing to show.",
+
+  // Preuves : les 29 preuves de la campagne, et les six qui se recalculent
+  "proof.title": "Proof",
+  "proof.intro": "What this project proved, and what still computes here: no model, no network, no key.",
+  "proof.campaign": "What this project did",
+  "proof.campaignHint": "Each proof replays with its command.",
+  "proof.live": "Computed now, in your browser",
+  "proof.liveHint": "The engine runs these six proofs right here on this page.",
+  "proof.replay": "Replay the proofs",
+  "proof.running": "Recalculating the proofs…",
+  "proof.steps": "Steps",
+  "proof.verdict.verified": "verified",
+  "proof.verdict.failed": "failed",
+  "proof.demo.quote": "The quote adds up",
+  "proof.demo.manor": "The manor reacts to a message",
+  "proof.demo.spy": "The spy sees the message travel",
+  "proof.demo.rights": "A level-1 agent cannot write",
+  "proof.demo.replay": "The same run gives the same state",
+  "proof.demo.undo": "Undo gives the stack back",
 
   // Les états du brief 12.2
   "state.emptyStack": "This stack has no cards yet.",
