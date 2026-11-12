@@ -1,0 +1,39 @@
+{
+  "mode": "cassette",
+  "entries": [
+    {
+      "fingerprint": "3573185cec9330c96f109b2327b8112203fe9b582004e8eec5ced58364e44c7c",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "end",
+        "blocks": [
+          {
+            "type": "text",
+            "text": "Dear Mr Dupont, thank you for your request. I will confirm the tap replacement and pipe joint prices tomorrow morning."
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    },
+    {
+      "fingerprint": "72dbec760839c51b34660ec2e23ef1b5bcf9612107b0f491ad7691f72faa0737",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "end",
+        "blocks": [
+          {
+            "type": "text",
+            "text": "Dear Mr Martin, thank you for your enquiry. I will confirm the boiler service price tomorrow morning."
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    }
+  ]
+}
