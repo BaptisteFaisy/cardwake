@@ -129,7 +129,7 @@ function checkPartLimit(stack: Stack, where: "card" | "background", owner: numbe
 
 export function createField(
   stack: Stack,
-  opts: { name: string; cardId?: number; backgroundId?: number; rect?: Rect; multiline?: boolean; locked?: boolean },
+  opts: { name: string; cardId?: number; backgroundId?: number; rect?: Rect; multiline?: boolean; locked?: boolean; script?: string },
 ): { stack: Stack; part: FieldPart } {
   const { parts, where, owner } = targetParts(stack, opts.cardId, opts.backgroundId);
   checkPartLimit(stack, where, owner);
@@ -141,7 +141,7 @@ export function createField(
     rect: opts.rect ?? nextRect(parts),
     visible: true,
     style: "plain",
-    script: "",
+    script: opts.script ?? "",
     text: "",
     locked: opts.locked ?? false,
     multiline: opts.multiline ?? false,
@@ -163,7 +163,7 @@ function addContentIfNeeded(stack: Stack, where: "card" | "background", owner: n
 
 export function createButton(
   stack: Stack,
-  opts: { name: string; cardId?: number; label?: string; rect?: Rect },
+  opts: { name: string; cardId?: number; label?: string; rect?: Rect; script?: string },
 ): { stack: Stack; part: ButtonPart } {
   const { parts, where, owner } = targetParts(stack, opts.cardId, undefined);
   checkPartLimit(stack, where, owner);
@@ -175,7 +175,7 @@ export function createButton(
     rect: opts.rect ?? nextRect(parts),
     visible: true,
     style: "plain",
-    script: "",
+    script: opts.script ?? "",
     label: opts.label ?? opts.name,
     enabled: true,
     hilite: false,

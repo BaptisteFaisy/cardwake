@@ -14,6 +14,12 @@ import { applyOps, invertOps } from "./ops";
 
 type Pending = { actor: TransactionActor; cause: string; seed: number; ops: Op[] };
 
+/**
+ * Les transactions s'empilent : un script qui consulte un agent ouvre un tour
+ * d'agent **à l'intérieur** de sa propre transaction. Chacune reste annulable
+ * d'un geste, et l'annulation se fait dans l'ordre inverse de la validation.
+ */
+
 /** Une ligne lisible par opération, pour le panneau du journal et son export. */
 export function describeOp(op: Op): string {
   switch (op.kind) {
@@ -68,7 +74,7 @@ export function describeActor(actor: TransactionActor): string {
 export class Journal {
   private history: Transaction[] = [];
   private undone: Transaction[] = [];
-  private pending: Pending | null = null;
+  private pending: Pending[] = [];
   private nextId = 1;
   private snapshot: { stack: Stack; uptoTransactionId: number } | null = null;
   private readonly historyLength: number;
@@ -81,14 +87,15 @@ export class Journal {
     return this.history.length;
   }
 
-  /** Ouvre une transaction. Une seule à la fois : la précédente est abandonnée. */
+  /** Ouvre une transaction, éventuellement à l'intérieur d'une autre. */
   begin(actor: TransactionActor, cause: string, seed: number): void {
-    this.pending = { actor, cause, seed, ops: [] };
+    this.pending.push({ actor, cause, seed, ops: [] });
   }
 
   record(op: Op): void {
-    if (!this.pending) throw new Error("record() outside a transaction: call begin() first");
-    this.pending.ops.push(op);
+    const top = this.pending[this.pending.length - 1];
+    if (!top) throw new Error("record() outside a transaction: call begin() first");
+    top.ops.push(op);
   }
 
   /**
@@ -96,8 +103,7 @@ export class Journal {
    * l'historique : un clic qui ne change rien ne doit pas pouvoir être annulé.
    */
   commit(stack: Stack, clock: string, usage?: TokenUsage): Transaction {
-    const pending = this.pending;
-    this.pending = null;
+    const pending = this.pending.pop() ?? null;
     const empty: Transaction = {
       id: this.nextId,
       actor: pending?.actor ?? { kind: "human", mode: "browse" },
@@ -124,7 +130,12 @@ export class Journal {
 
   /** Jette la transaction en cours : aucune trace (CAR-P-07). */
   abort(): void {
-    this.pending = null;
+    this.pending.pop();
+  }
+
+  /** Nombre de transactions ouvertes : 0 au repos, 2 pendant un `consult`. */
+  get depth(): number {
+    return this.pending.length;
   }
 
   entries(): Transaction[] {

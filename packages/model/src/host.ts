@@ -28,7 +28,7 @@ import {
   type LocatedPart,
 } from "./host-read";
 import { sortFieldText, setTextOp, targetOf } from "./host-write";
-import type { ChunkType, PropName } from "@cardwake/lang";
+import type { ChunkType, ObjRef, PropName } from "@cardwake/lang";
 
 export type HostContext = {
   stack: Stack;
@@ -41,6 +41,12 @@ export type HostContext = {
   settings: StackSettings;
   /** Identifiant de la transaction en cours : sert de marque d'encre. */
   txId?: number;
+  /**
+   * État partagé avec les hôtes de la même action. Un script qui consulte un
+   * agent ouvre un hôte **à l'intérieur** du sien : sans état partagé, les
+   * écritures de l'agent seraient écrasées par la copie du script appelant.
+   */
+  shared?: { stack: Stack };
   ask?: (prompt: string) => string;
   consult?: (cardId: number, text: string) => string | Promise<string>;
   onMessage?: (name: string, args: string[], target: MessageTarget) => void;
@@ -58,13 +64,24 @@ function intoWord(mode: "replace" | "before" | "after"): string {
 }
 
 export class ModelHost implements Host {
-  private current: Stack;
+  private own: Stack;
   private readonly lines: TraceEntry[] = [];
   private readonly refusals: Verdict[] = [];
   private steps = 0;
 
   constructor(private readonly ctx: HostContext) {
-    this.current = ctx.stack;
+    this.own = ctx.stack;
+    if (ctx.shared) ctx.shared.stack = ctx.stack;
+  }
+
+  /** L'état courant : celui du partage s'il y en a un, sinon le sien. */
+  private get current(): Stack {
+    return this.ctx.shared ? this.ctx.shared.stack : this.own;
+  }
+
+  private set current(value: Stack) {
+    if (this.ctx.shared) this.ctx.shared.stack = value;
+    else this.own = value;
   }
 
   get actor(): Actor {
@@ -265,6 +282,38 @@ export class ModelHost implements Host {
     const before = currentText(this.current, loc.cardId, loc.part.id);
     const after = sortFieldText(before, chunkType, index, numeric, descending);
     this.commit(setTextOp(this.current, loc, after, this.ink()), `sort field "${loc.part.name}"`);
+  }
+
+  // ------------------------------------------------------- raccourcis agent
+
+  /** Désigne un élément par son nom : le chemin court qu'un agent utilise. */
+  partRef(partKind: "field" | "button", name: string): ObjRef {
+    const span = { start: { line: 0, col: 0, offset: 0 }, end: { line: 0, col: 0, offset: 0 } };
+    return { kind: "part", ref: { partKind, by: { kind: "name", name, span }, span }, span };
+  }
+
+  /** Écrit dans un champ par son nom. Rend `false` si le champ n'existe pas. */
+  writeFieldByName(
+    name: string,
+    text: string,
+    mode: "replace" | "append" | "prepend" = "replace",
+  ): boolean {
+    const ref = this.resolve(this.partRef("field", name));
+    if (isScriptError(ref)) {
+      // Un échec silencieux coûterait des heures : on le trace.
+      this.log(`refused (unresolved): ${ref.message}`);
+      return false;
+    }
+    this.writeText(ref, text, mode === "append" ? "after" : mode === "prepend" ? "before" : "replace");
+    return true;
+  }
+
+  /** Lit un champ par son nom ; chaîne vide s'il n'existe pas. */
+  readFieldByName(name: string): string {
+    const ref = this.resolve(this.partRef("field", name));
+    if (isScriptError(ref)) return "";
+    const text = this.readText(ref);
+    return typeof text === "string" ? text : "";
   }
 
   // ------------------------------------------------------------ effets hors pile
