@@ -46,7 +46,7 @@ export async function runCli(argv: readonly string[]): Promise<number> {
   return argv.includes("--rapport") ? await regenerate() : await verifyAll();
 }
 
-/** Rien ne se lance à l'import : seule l'invocation directe lance la commande. */
-if (process.argv[2]?.endsWith("cli.ts")) {
-  process.exitCode = await runCli(process.argv.slice(3));
+/** Rien ne se lance à l'import : seule la variable du script `preuves` lance la commande. */
+if (process.env.CARDWAKE_PREUVES === "1") {
+  process.exitCode = await runCli(process.argv.slice(2));
 }
