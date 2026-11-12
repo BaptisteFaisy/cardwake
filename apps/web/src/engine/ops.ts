@@ -22,10 +22,10 @@ export type FieldTarget = { backgroundId?: number; locked: boolean; part: Part }
 export type BuiltOps = { ops: Op[]; nextId?: number };
 
 /**
- * Valeur texte actuelle d'une propriété d'élément : miroir local de `ops.ts`
- * (fonction non exportée, contrat figé), borné aux propriétés de l'inspecteur.
- * `before` doit être exact pour que l'inverse du journal ramène à l'état
- * d'avant.
+ * Valeur texte actuelle d'une propriété d'élément : miroir local de l'`ops.ts`
+ * du modèle (fonction non exportée, contrat figé), borné aux propriétés de
+ * l'inspecteur. `before` doit être exact pour que l'inverse du journal
+ * ramène à l'état d'avant.
  */
 export function readPropText(part: Part, prop: PropName): string {
   if (prop === "name") return part.name;

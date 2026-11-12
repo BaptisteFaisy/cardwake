@@ -17,13 +17,14 @@ import { Shelf } from "./screens/Shelf";
 import { CardPlay } from "./screens/CardPlay";
 import { CardBuild } from "./screens/CardBuild";
 import { Journal } from "./screens/Journal";
+import { Proof } from "./screens/Proof";
 import { Reception } from "./screens/Reception";
 import { Settings } from "./screens/Settings";
 import { Spy } from "./screens/Spy";
 import "./styles/two-inks.css";
 
-/** Les sept écrans du brief (12.1), routés sans bibliothèque externe. */
-export type Screen = "shelf" | "card" | "journal" | "reception" | "settings" | "spy";
+/** Les écrans du brief (12.1), routés sans bibliothèque externe. */
+export type Screen = "shelf" | "card" | "journal" | "reception" | "settings" | "spy" | "proof";
 
 export function App({ engine }: { engine: CardwakeEngine }): JSX.Element {
   return (
@@ -100,6 +101,7 @@ function TopBar({ screen, go, hasStack }: TopBarProps): JSX.Element {
         {navButton("card", t("mode.play"), hasStack)}
         {navButton("journal", t("nav.journal"), hasStack)}
         {navButton("spy", t("nav.spy"), hasStack)}
+        {navButton("proof", t("nav.proof"))}
         {navButton("reception", t("nav.reception"), hasStack)}
         {navButton("settings", t("nav.settings"))}
       </nav>
@@ -145,6 +147,8 @@ function Body(props: BodyProps): JSX.Element {
       return <Settings />;
     case "spy":
       return <Spy />;
+    case "proof":
+      return <Proof />;
   }
 }
 

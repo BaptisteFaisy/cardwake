@@ -474,6 +474,22 @@ export type ModelEngineApi = CardwakeEngine & {
   chat(text: string): void;
 };
 
+/**
+ * Attend la fin d'une action asynchrone : le moteur émet `changed` quand le
+ * dispatch est réglé. À appeler AVANT l'action. Un seul exemplaire : les
+ * tests et les preuves du site attendent de la même façon.
+ */
+export function settled(engine: CardwakeEngine): Promise<void> {
+  return new Promise((resolve) => {
+    const off = engine.subscribe((event) => {
+      if (event.type === "changed") {
+        off();
+        resolve();
+      }
+    });
+  });
+}
+
 /** Fabrique du moteur réel : c'est elle que le site et les tests utilisent. */
 export function createModelEngine(options: ModelEngineOptions): ModelEngineApi {
   return new ModelEngine(options);

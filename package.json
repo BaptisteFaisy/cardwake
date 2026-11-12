@@ -21,6 +21,7 @@
     "preview": "npm run preview --workspace @cardwake/web",
     "guards": "python3 scripts/guards/run_all.py",
     "limits": "python3 scripts/guards/check_limits.py",
+    "preuves": "vitest run packages/proofs --reporter=basic",
     "ci": "npm run typecheck && npm run test:ci && npm run guards"
   },
   "devDependencies": {
