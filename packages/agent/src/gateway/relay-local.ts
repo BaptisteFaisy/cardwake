@@ -34,7 +34,11 @@ export class RelayUnreachable extends Error {
 export type LocalRelayOptions = {
   /** Base du relais, se terminant par `/v1`. */
   baseUrl?: string;
-  /** Modèle demandé au relais. */
+  /**
+   * Modèle demandé au relais. Par défaut `combo/cheap` : le relais ne parle
+   * qu'aux modèles de sa liste fermée, et un nom de modèle inconnu de la part
+   * du client serait refusé par le fournisseur.
+   */
   model?: string;
   /** `fetch` injectable : les tests n'ouvrent jamais de connexion. */
   fetchImpl?: FetchLike;
@@ -50,7 +54,7 @@ export function createLocalRelayGateway(options: LocalRelayOptions = {}): LlmGat
   return {
     mode: "relay",
     async call(request: LlmRequest, signal: AbortSignal): Promise<LlmResponse> {
-      const body = toOpenAiBody(request, { model: options.model });
+      const body = toOpenAiBody(request, { model: options.model ?? "combo/cheap" });
       try {
         return await callOpenAiCompatible({
           url: joinUrl(baseUrl, "/chat/completions"),
