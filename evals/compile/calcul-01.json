@@ -1,0 +1,96 @@
+{
+  "id": "calcul-01",
+  "family": "calcul",
+  "phrase": "When Total is clicked, add up quantity times price for every line of field Lines and write the subtotal into field Subtotal.",
+  "object": "Invoice/Total",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Invoice",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Lines",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "Pen,2,3.5\nNotebook,1,8",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Subtotal",
+            "rect": [
+              16,
+              144,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Total",
+            "name": "Total",
+            "rect": [
+              16,
+              176,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval calcul-01",
+    "nextId": 50,
+    "persona": "A one-card invoice for a stationery shop. Lines are label,quantity,price.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Total"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Invoice",
+      "field": "Subtotal",
+      "value": "15"
+    }
+  ]
+}

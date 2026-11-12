@@ -1,0 +1,96 @@
+{
+  "id": "chunks-04",
+  "family": "chunks",
+  "phrase": "Correct copies field Draft into field Fixed, with the word broken replaced by the word fixed.",
+  "object": "Report/Correct",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Report",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Draft",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "The boiler is broken",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Fixed",
+            "rect": [
+              16,
+              72,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Correct",
+            "name": "Correct",
+            "rect": [
+              16,
+              104,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval chunks-04",
+    "nextId": 50,
+    "persona": "A maintenance report gets a clean copy once the job is done.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Correct"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Report",
+      "field": "Fixed",
+      "value": "The boiler is fixed"
+    }
+  ]
+}

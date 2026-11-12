@@ -1,0 +1,96 @@
+{
+  "id": "loops-06",
+  "family": "loops",
+  "phrase": "Double multiplies each number listed in field Amounts by two and writes the new list into field Doubled, one number per line.",
+  "object": "Recipes/Double",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Recipes",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Amounts",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "10\n20\n30",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Doubled",
+            "rect": [
+              16,
+              144,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Double",
+            "name": "Double",
+            "rect": [
+              16,
+              248,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval loops-06",
+    "nextId": 50,
+    "persona": "A recipe card doubles every amount for a bigger batch.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Double"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Recipes",
+      "field": "Doubled",
+      "value": "20\n40\n60"
+    }
+  ]
+}

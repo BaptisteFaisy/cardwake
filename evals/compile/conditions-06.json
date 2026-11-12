@@ -1,0 +1,102 @@
+{
+  "id": "conditions-06",
+  "family": "conditions",
+  "phrase": "Tell writes even into field Parity when the number typed into field Number is even, and odd when it is not.",
+  "object": "Pairs/Tell",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Pairs",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Number",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Parity",
+            "rect": [
+              16,
+              72,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Tell",
+            "name": "Tell",
+            "rect": [
+              16,
+              104,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval conditions-06",
+    "nextId": 50,
+    "persona": "A classroom card that answers even or odd.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "type": {
+        "field": "Number",
+        "text": "18"
+      }
+    },
+    {
+      "click": "Tell"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Pairs",
+      "field": "Parity",
+      "value": "even"
+    }
+  ]
+}

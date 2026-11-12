@@ -12,7 +12,7 @@ import { defineConfig } from "vitest/config";
  */
 export default defineConfig({
   test: {
-    include: ["packages/*/test/**/*.test.ts", "apps/*/test/**/*.test.ts"],
+    include: ["packages/*/test/**/*.test.ts", "apps/*/test/**/*.test.ts", "evals/**/*.test.ts"],
     environment: "node",
     pool: "threads",
     testTimeout: 20_000,

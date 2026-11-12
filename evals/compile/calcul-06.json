@@ -1,0 +1,102 @@
+{
+  "id": "calcul-06",
+  "family": "calcul",
+  "phrase": "Compute reads a line shaped label,quantity,price typed into field New, multiplies quantity by price and writes the result into field Total.",
+  "object": "Quote/Compute",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Quote",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "New",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Total",
+            "rect": [
+              16,
+              72,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Compute",
+            "name": "Compute",
+            "rect": [
+              16,
+              104,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval calcul-06",
+    "nextId": 50,
+    "persona": "A hardware quote: one typed line, one computed total.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "type": {
+        "field": "New",
+        "text": "Bolts,4,2.5"
+      }
+    },
+    {
+      "click": "Compute"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Quote",
+      "field": "Total",
+      "value": "10"
+    }
+  ]
+}

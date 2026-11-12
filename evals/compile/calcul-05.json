@@ -1,0 +1,102 @@
+{
+  "id": "calcul-05",
+  "family": "calcul",
+  "phrase": "When the Add button is clicked, add whatever figure was typed into field Amount to the running total kept in field Counter.",
+  "object": "Till/Add",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Till",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Amount",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Counter",
+            "rect": [
+              16,
+              72,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "5",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Add",
+            "name": "Add",
+            "rect": [
+              16,
+              104,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval calcul-05",
+    "nextId": 50,
+    "persona": "A market stall keeps a running total for the day.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "type": {
+        "field": "Amount",
+        "text": "7"
+      }
+    },
+    {
+      "click": "Add"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Till",
+      "field": "Counter",
+      "value": "12"
+    }
+  ]
+}

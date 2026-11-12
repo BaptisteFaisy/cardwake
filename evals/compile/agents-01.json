@@ -1,0 +1,100 @@
+{
+  "id": "agents-01",
+  "family": "agents",
+  "phrase": "Draft asks this card's agent for a short thank-you note about the order in field Notes and stores the agent's answer in field Follow-up.",
+  "object": "Client/Draft",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": {
+          "awake": true,
+          "level": 2,
+          "persona": "You write short thank-you notes for orders. Every note you write contains the word thanks. You write only in field Follow-up.",
+          "speed": "fast"
+        },
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Client",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Notes",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "Ordered two chairs, delivery on Friday",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Follow-up",
+            "rect": [
+              16,
+              144,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Draft",
+            "name": "Draft",
+            "rect": [
+              16,
+              248,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval agents-01",
+    "nextId": 50,
+    "persona": "The judged behaviour is the note the agent wrote, not any script text.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Draft"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "agentSaid",
+      "card": "Client",
+      "contains": "thanks"
+    }
+  ]
+}

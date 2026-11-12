@@ -1,0 +1,99 @@
+{
+  "id": "calcul-02",
+  "family": "calcul",
+  "phrase": "Pressing Tax must compute ten percent of the amount in field Amount, rounded to two decimals, and write it into field VAT.",
+  "object": "Receipt/Tax",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Receipt",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Amount",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "240",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "VAT",
+            "rect": [
+              16,
+              72,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Tax",
+            "name": "Tax",
+            "rect": [
+              16,
+              104,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval calcul-02",
+    "nextId": 50,
+    "persona": "A till receipt: one amount, one tax line at ten percent.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Tax"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Receipt",
+      "field": "VAT",
+      "value": "24"
+    },
+    {
+      "kind": "noError"
+    }
+  ]
+}

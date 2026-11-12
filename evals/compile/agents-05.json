@@ -1,0 +1,83 @@
+{
+  "id": "agents-05",
+  "family": "agents",
+  "phrase": "When a guest asks in the chat what the soup of the day is, answer with the soup written in field Menu and put the answer into field Answer.",
+  "object": "Cafe/Answer",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": {
+          "awake": true,
+          "level": 2,
+          "persona": "You answer questions about today's menu only, from what field Menu says. The soup of the day is pumpkin and you always name it. You write your answer into field Answer.",
+          "speed": "fast"
+        },
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Cafe",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Menu",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "Soup of the day: pumpkin\nCake: lemon",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Answer",
+            "rect": [
+              16,
+              144,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval agents-05",
+    "nextId": 50,
+    "persona": "Chat-driven: the answer must come from the menu field, through the agent.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "chat": "What is the soup of the day?"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "agentSaid",
+      "card": "Cafe",
+      "contains": "pumpkin"
+    }
+  ]
+}

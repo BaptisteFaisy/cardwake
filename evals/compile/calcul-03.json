@@ -1,0 +1,96 @@
+{
+  "id": "calcul-03",
+  "family": "calcul",
+  "phrase": "When Average is clicked, compute the mean of the numbers listed in field Scores, rounded to one decimal, and show it in field Average.",
+  "object": "Grades/Average",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Grades",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Scores",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "12\n15\n9",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Average",
+            "rect": [
+              16,
+              144,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Average",
+            "name": "Average",
+            "rect": [
+              16,
+              176,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval calcul-03",
+    "nextId": 50,
+    "persona": "A teacher keeps one grade per line and wants the class mean.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Average"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Grades",
+      "field": "Average",
+      "value": "12"
+    }
+  ]
+}

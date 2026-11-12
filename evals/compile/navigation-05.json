@@ -1,0 +1,104 @@
+{
+  "id": "navigation-05",
+  "family": "navigation",
+  "phrase": "Jump to the end must show the very last card of the stack, whatever the current position is.",
+  "object": "Front/Jump to the end",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Front",
+        "parts": [
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Jump to the end",
+            "name": "Jump to the end",
+            "rect": [
+              16,
+              40,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      },
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 2,
+        "ink": {},
+        "name": "Middle",
+        "parts": [],
+        "script": ""
+      },
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 3,
+        "ink": {},
+        "name": "End",
+        "parts": [
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 5,
+            "kind": "button",
+            "label": "Home again",
+            "name": "Home again",
+            "rect": [
+              16,
+              40,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval navigation-05",
+    "nextId": 50,
+    "persona": "A booklet with a shortcut to its last page.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Jump to the end"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "cardIs",
+      "name": "End"
+    },
+    {
+      "kind": "partExists",
+      "card": "End",
+      "part": "button",
+      "name": "Home again"
+    }
+  ]
+}

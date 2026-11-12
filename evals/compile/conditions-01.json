@@ -1,0 +1,101 @@
+{
+  "id": "conditions-01",
+  "family": "conditions",
+  "phrase": "Add must refuse to touch field List when field New is empty, and append the typed line to field List when it is not.",
+  "object": "Tasks/Add",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Tasks",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "New",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "List",
+            "rect": [
+              16,
+              72,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "water the plants",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Add",
+            "name": "Add",
+            "rect": [
+              16,
+              176,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval conditions-01",
+    "nextId": 50,
+    "persona": "Clicked with an empty field New: the list must not move.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Add"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Tasks",
+      "field": "List",
+      "value": "water the plants"
+    },
+    {
+      "kind": "fieldEmpty",
+      "card": "Tasks",
+      "field": "New"
+    }
+  ]
+}

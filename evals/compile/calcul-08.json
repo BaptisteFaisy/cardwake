@@ -1,0 +1,113 @@
+{
+  "id": "calcul-08",
+  "family": "calcul",
+  "phrase": "Weigh must add the number in field Box to the number in field Crate and put their sum into field Total.",
+  "object": "Weights/Weigh",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Weights",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Box",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "6",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Crate",
+            "rect": [
+              16,
+              72,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "7.5",
+            "visible": true
+          },
+          {
+            "id": 4,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Total",
+            "rect": [
+              16,
+              104,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 5,
+            "kind": "button",
+            "label": "Weigh",
+            "name": "Weigh",
+            "rect": [
+              16,
+              136,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval calcul-08",
+    "nextId": 50,
+    "persona": "A depot weighs a box and a crate, then adds the two.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Weigh"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Weights",
+      "field": "Total",
+      "value": "13.5"
+    }
+  ]
+}

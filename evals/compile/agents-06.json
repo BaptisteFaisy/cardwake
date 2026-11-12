@@ -1,0 +1,117 @@
+{
+  "id": "agents-06",
+  "family": "agents",
+  "phrase": "Consult the oracle sends the word typed into field Word over to the Oracle card, where the oracle writes down what it received.",
+  "object": "Desk/Consult the oracle",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Desk",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Word",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 3,
+            "kind": "button",
+            "label": "Consult the oracle",
+            "name": "Consult the oracle",
+            "rect": [
+              16,
+              72,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      },
+      {
+        "agent": {
+          "awake": true,
+          "level": 2,
+          "persona": "You are the oracle. When a message arrives, write what you heard into field Heard, starting with HEARD:",
+          "speed": "fast"
+        },
+        "background": null,
+        "content": {},
+        "id": 4,
+        "ink": {},
+        "name": "Oracle",
+        "parts": [
+          {
+            "id": 5,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Heard",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval agents-06",
+    "nextId": 50,
+    "persona": "The message itself is the judged behaviour: the oracle card shows it.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "type": {
+        "field": "Word",
+        "text": "amber"
+      }
+    },
+    {
+      "click": "Consult the oracle"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "messageSent",
+      "to": "Oracle",
+      "contains": "amber"
+    }
+  ]
+}
