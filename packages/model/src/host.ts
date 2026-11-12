@@ -10,11 +10,11 @@
 
 import type { Actor, ChunkBounds, Determinism, Guards, Host, ResolvedRef, TraceEntry } from "@cardwake/lang";
 import type { ScriptError } from "@cardwake/lang";
-import { readChunk, writeChunk } from "@cardwake/lang";
+import { writeChunk } from "@cardwake/lang";
 import type { MessageTarget, Op, Part, Stack, Verdict } from "./types";
 import type { StackSettings } from "./limits";
 import { APP_LIMITS } from "./limits";
-import { applyOp, currentInk, currentText } from "./ops";
+import { applyOp, currentText } from "./ops";
 import type { Journal } from "./journal";
 import { authorizeOp } from "./authorize";
 import { nextRect } from "./factory";
@@ -25,6 +25,7 @@ import {
   readResolvedProp,
   readResolvedText,
   resolveObjRef,
+  type LocatedPart,
 } from "./host-read";
 import { sortFieldText, setTextOp, targetOf } from "./host-write";
 import type { ChunkType, PropName } from "@cardwake/lang";
@@ -43,10 +44,17 @@ export type HostContext = {
   ask?: (prompt: string) => string;
   consult?: (cardId: number, text: string) => string | Promise<string>;
   onMessage?: (name: string, args: string[], target: MessageTarget) => void;
+  /** `pass` fait volontairement monter le message d'un cran (7.2). */
+  onPass?: (message: string) => void;
 };
 
 function isScriptError(value: unknown): value is ScriptError {
   return typeof value === "object" && value !== null && "category" in value;
+}
+
+/** Le mode d'écriture tel qu'il s'écrit dans le langage : `into`, `before`, `after`. */
+function intoWord(mode: "replace" | "before" | "after"): string {
+  return mode === "replace" ? "into" : mode;
 }
 
 export class ModelHost implements Host {
@@ -150,7 +158,7 @@ export class ModelHost implements Host {
     if (!loc || loc.part.kind !== "field") return void this.log("refused: not a writable field");
     const before = currentText(this.current, loc.cardId, loc.part.id);
     const after = mode === "replace" ? text : mode === "before" ? text + before : before + text;
-    const line = `put ${JSON.stringify(text)} ${mode} field "${loc.part.name}"`;
+    const line = `put ${JSON.stringify(text)} ${intoWord(mode)} field "${loc.part.name}"`;
     this.commit(setTextOp(this.current, loc, after, this.ink()), line);
   }
 
@@ -159,7 +167,7 @@ export class ModelHost implements Host {
     if (!loc || loc.part.kind !== "field") return void this.log("refused: not a writable field");
     const before = currentText(this.current, loc.cardId, loc.part.id);
     const after = writeChunk(before, chunkType, text, mode, bounds.ordinal, bounds.from, bounds.to);
-    const line = `put ${JSON.stringify(text)} ${mode} ${chunkType} ${bounds.ordinal ?? `${bounds.from} to ${bounds.to}`} of field "${loc.part.name}"`;
+    const line = `put ${JSON.stringify(text)} ${intoWord(mode)} ${chunkType} ${bounds.ordinal ?? `${bounds.from} to ${bounds.to}`} of field "${loc.part.name}"`;
     this.commit(setTextOp(this.current, loc, after, this.ink()), line);
   }
 
@@ -227,9 +235,9 @@ export class ModelHost implements Host {
     if (ref.kind === "part") {
       const loc = locatePart(this.current, ref);
       if (!loc) return;
-      const index = this.partsOf(loc.cardId).findIndex((part) => part.id === loc.part.id);
+      const index = this.indexOfPart(loc);
       this.commit(
-        { kind: "deletePart", cardId: loc.cardId, backgroundId: loc.backgroundId, part: loc.part, index: Math.max(0, index) },
+        { kind: "deletePart", cardId: loc.cardId, backgroundId: loc.backgroundId, part: loc.part, index },
         `delete ${loc.part.kind} "${loc.part.name}"`,
       );
       return;
@@ -277,6 +285,7 @@ export class ModelHost implements Host {
 
   pass(message: string): void {
     this.log(`pass ${message}`);
+    this.ctx.onPass?.(message);
   }
 
   consult(agent: ResolvedRef, text: string): string | Promise<string> {
@@ -304,11 +313,15 @@ export class ModelHost implements Host {
 
   // ------------------------------------------------------------------ aides
 
-  private partsOf(cardId: number): Part[] {
-    const card = this.current.cards.find((item) => item.id === cardId);
-    if (!card) return [];
-    const shared = this.current.backgrounds.find((item) => item.id === card.background)?.parts ?? [];
-    return [...shared, ...card.parts];
+  /**
+   * Rang de l'élément dans la liste où `applyOp` le replace à l'annulation :
+   * les éléments du fond pour un champ partagé, ceux de la carte sinon.
+   */
+  private indexOfPart(loc: LocatedPart): number {
+    const owner = loc.fromBackground
+      ? this.current.backgrounds.find((item) => item.id === loc.backgroundId)?.parts
+      : this.current.cards.find((item) => item.id === loc.cardId)?.parts;
+    return Math.max(0, owner?.findIndex((part) => part.id === loc.part.id) ?? 0);
   }
 
   private backgroundIdByName(name?: string): number | null {
@@ -340,5 +353,3 @@ export class ModelHost implements Host {
     return Math.min(this.ctx.guards.maxTextChars, APP_LIMITS.maxFieldChars);
   }
 }
-
-export { currentInk };

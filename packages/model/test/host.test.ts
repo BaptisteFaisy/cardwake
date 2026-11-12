@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { parseScript } from "@cardwake/lang";
 import type { Actor, Determinism, Guards } from "@cardwake/lang";
 import { runHandler } from "@cardwake/lang";
-import { createButton, createCard, createField, createStack, setAgent } from "../src/factory";
+import { createBackground, createButton, createCard, createField, createStack, setAgent } from "../src/factory";
 import { Journal } from "../src/journal";
 import { ModelHost } from "../src/host";
 import { serializeStack } from "../src/file";
@@ -117,6 +117,8 @@ describe("ModelHost — un script s'exécute sur une vraie pile", () => {
     const lines = host.trace.map((entry) => entry.text);
     expect(lines.some((line) => line.includes('field "Subtotal"'))).toBe(true);
     expect(lines.some((line) => line.startsWith("put"))).toBe(true);
+    // La trace suit la forme du langage : `put "150" into field "Subtotal"`.
+    expect(lines.some((line) => line === 'put "150" into field "Subtotal"')).toBe(true);
   });
 });
 
@@ -191,5 +193,82 @@ describe("ModelHost — robustesse", () => {
     expect(fieldOf(undone!.stack, "Total")).toBe(fieldOf(stack, "Total"));
     expect(undone!.stack.cards.length).toBe(stack.cards.length);
     expect(before.length).toBeGreaterThan(0);
+  });
+});
+
+/** Une carte rattachée à un fond : le texte d'un champ partagé vit dans `card.content`. */
+function sharedStack(): { stack: Stack; cardId: number } {
+  const background = createBackground(createStack("Manor"), "Character");
+  const shared = createField(background.stack, { name: "Says", backgroundId: background.background.id });
+  const card = createCard(shared.stack, { name: "Guard", backgroundId: background.background.id });
+  const own = createField(card.stack, { name: "Notes", cardId: card.card.id });
+  const cards = own.stack.cards.map((item) =>
+    item.id === card.card.id ? { ...item, content: { ...item.content, [String(shared.part.id)]: "Who goes there?" } } : item,
+  );
+  return { stack: { ...own.stack, cards }, cardId: card.card.id };
+}
+
+describe("ModelHost — lecture, morceaux, propriétés et structure", () => {
+  it("lit un champ du fond depuis le contenu de la carte et écrit dans un champ propre", async () => {
+    const { stack, cardId } = sharedStack();
+    const source = 'on mouseUp\n  put field "Says" into field "Notes"\nend mouseUp';
+    const { host, journal, parsed } = run(stack, cardId, source, { kind: "script", objectId: 1 });
+    await runHandler(parsed.script, "mouseUp", [], host);
+    expect(fieldOf(host.stack, "Notes")).toBe("Who goes there?");
+    expect(journal.commit(host.stack, CLOCK).ops).toHaveLength(1);
+  });
+
+  it("écrire dans word 2 of field produit un seul setText", async () => {
+    const { stack, cardId } = quoteStack();
+    const source = 'on mouseUp\n  put "un deux trois" into field "Total"\n  put "payé" into word 2 of field "Total"\nend mouseUp';
+    const { host, journal, parsed } = run(stack, cardId, source, { kind: "script", objectId: 1 });
+    await runHandler(parsed.script, "mouseUp", [], host);
+    expect(fieldOf(host.stack, "Total")).toBe("un payé trois");
+    const transaction = journal.commit(host.stack, CLOCK);
+    expect(transaction.ops.map((op) => op.kind)).toEqual(["setText", "setText"]);
+    const chunkOp = transaction.ops[1];
+    expect(chunkOp.kind === "setText" && chunkOp.before).toBe("un deux trois");
+  });
+
+  it("set the visible of button … to false produit un setProp", async () => {
+    const { stack, cardId, buttonId } = quoteStack();
+    const source = 'on mouseUp\n  set the visible of button "Total" to false\nend mouseUp';
+    const { host, journal, parsed } = run(stack, cardId, source, { kind: "script", objectId: 1 });
+    await runHandler(parsed.script, "mouseUp", [], host);
+    expect(host.stack.cards[0].parts.find((part) => part.id === buttonId)?.visible).toBe(false);
+    const transaction = journal.commit(host.stack, CLOCK);
+    expect(transaction.ops.map((op) => op.kind)).toEqual(["setProp"]);
+    expect(host.trace.some((entry) => entry.text.includes('set the visible of button "Total" to false'))).toBe(true);
+  });
+
+  it("un agent de niveau 2 écrit sur sa carte et marque son encre", async () => {
+    const { stack, cardId } = quoteStack(2);
+    const source = 'on mouseUp\n  put "noted" into field "Lines"\nend mouseUp';
+    const { host, journal, parsed } = run(stack, cardId, source, { kind: "agent", cardId, level: 2 });
+    await runHandler(parsed.script, "mouseUp", [], host);
+    expect(fieldOf(host.stack, "Lines")).toBe("noted");
+    expect(host.lastRefusals).toHaveLength(0);
+    const transaction = journal.commit(host.stack, CLOCK);
+    const lines = host.stack.cards[0].parts.find((part) => part.name === "Lines");
+    expect(transaction.ops[0].kind).toBe("setText");
+    expect(host.stack.cards[0].ink[String(lines?.id)]).toBe(1);
+  });
+
+  it("créer un champ, créer une carte, naviguer et supprimer : les opérations attendues", async () => {
+    const { stack, cardId } = quoteStack();
+    const source =
+      'on mouseUp\n  create field "Extra"\n  create card "Cellar"\n  go to card "Cellar"\n  delete field "Extra" of card "Dupont"\nend mouseUp';
+    const { host, journal, parsed } = run(stack, cardId, source, { kind: "human", mode: "author" });
+    await runHandler(parsed.script, "mouseUp", [], host);
+    const transaction = journal.commit(host.stack, CLOCK);
+    expect(transaction.ops.map((op) => op.kind)).toEqual(["createPart", "createCard", "navigate", "deletePart"]);
+    expect(host.stack.cards).toHaveLength(2);
+    expect(host.stack.currentCardId).toBe(host.stack.cards[1].id);
+    const undone = journal.undo(host.stack);
+    expect(undone!.stack.cards).toHaveLength(1);
+    // Annuler la transaction entière restaure l'état d'avant : le champ
+    // « Extra » n'existait pas avant, il ne doit donc plus exister après.
+    expect(undone!.stack.cards[0].parts.some((part) => part.name === "Extra")).toBe(false);
+    expect(undone!.stack.currentCardId).toBe(stack.currentCardId);
   });
 });
