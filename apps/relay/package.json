@@ -1,0 +1,15 @@
+{
+  "name": "@cardwake/relay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Relais local du modèle : il détient la clé et la relaie vers le fournisseur, sous des plafonds.",
+  "bin": {
+    "relay": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types src/index.ts",
+    "relay": "node --experimental-strip-types src/index.ts"
+  }
+}

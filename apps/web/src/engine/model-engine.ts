@@ -26,7 +26,9 @@ import type { BudgetView, CardwakeEngine, EngineEvent, JournalView, Mode, Refusa
 import { createDispatchAdapter, noticeOf, runDispatch, stepSeed } from "./dispatch-adapter";
 import type { DispatchAdapter, DispatchRequest } from "./dispatch-adapter";
 import { createAgentBridge } from "./agent-bridge";
-import { cassetteForStack } from "../data/cassettes";
+import type { AgentBridge } from "./agent-bridge";
+import { planFor } from "./model-access";
+import type { ModelEngineApi } from "./api";
 import {
   addBackgroundOps,
   addCardOps,
@@ -47,9 +49,14 @@ export type ModelEngineOptions = {
   seed: number;
   /**
    * La passerelle des tours d'agent : la cassette de la pile par défaut,
-   * jamais le réseau. Les tests peuvent en injecter une autre.
+   * ou le relais selon le mode d'accès choisi dans les réglages. Les tests
+   * peuvent en injecter une autre.
    */
   gatewayOf?: (stack: Stack) => LlmGateway | null;
+  /** La cassette de repli, jouée quand le relais ne répond pas. */
+  fallbackOf?: (stack: Stack) => LlmGateway | null;
+  /** Le relais était-il attendu pour ce tour ? */
+  relayExpected?: (stack: Stack) => boolean;
 };
 
 class ModelEngine implements CardwakeEngine {
@@ -65,12 +72,16 @@ class ModelEngine implements CardwakeEngine {
   private lastSpy: SpyView | null = null;
   private readonly clock: () => string;
   private readonly gatewayOf: (stack: Stack) => LlmGateway | null;
+  private readonly fallbackOf: (stack: Stack) => LlmGateway | null;
+  private readonly relayExpected: (stack: Stack) => boolean;
   private readonly listeners = new Set<(event: EngineEvent) => void>();
 
   constructor(options: ModelEngineOptions) {
     this.clock = options.clock;
     this.seed = options.seed >>> 0;
-    this.gatewayOf = options.gatewayOf ?? cassetteForStack;
+    this.gatewayOf = options.gatewayOf ?? ((stack) => planFor(stack).primary);
+    this.fallbackOf = options.fallbackOf ?? ((stack) => planFor(stack).fallback);
+    this.relayExpected = options.relayExpected ?? ((stack) => planFor(stack).relayExpected);
   }
 
   // ---- Ouverture et lecture ----
@@ -390,14 +401,16 @@ class ModelEngine implements CardwakeEngine {
 
   /**
    * Lance l'exécution asynchrone via l'adaptateur : journal, graine et horloge
-   * du moteur. Le pont enregistré est branché sur le `Dispatcher` : les tours
-   * d'agent passent par la cassette de la pile, jamais par le réseau.
+   * du moteur. Le pont est branché sur le `Dispatcher` : cassette par défaut,
+   * relais selon le mode d'accès, avec repli annoncé sur la cassette.
    */
   private dispatch(request: DispatchRequest): void {
     const stack = this.stack;
     if (stack === null) return;
     const bridge = createAgentBridge({
       gatewayOf: (current) => this.gatewayOf(current),
+      fallbackOf: (current) => this.fallbackOf(current),
+      relayExpected: (current) => this.relayExpected(current),
       session: () => this.session,
       action: () => this.action,
     });
@@ -410,7 +423,7 @@ class ModelEngine implements CardwakeEngine {
     });
     const described = describeRequest(stack, request);
     runDispatch(adapter, request)
-      .then((result) => this.settleDispatch(adapter, described, result, bridge.misses))
+      .then((result) => this.settleDispatch(adapter, described, result, bridge))
       .catch(() => this.say("The script failed and its transaction was rolled back."));
   }
 
@@ -419,20 +432,22 @@ class ModelEngine implements CardwakeEngine {
     adapter: DispatchAdapter,
     request: SpyRequest,
     result: DispatchResult,
-    misses: number,
+    bridge: AgentBridge,
   ): void {
     this.stack = adapter.current;
     this.redoable = false;
     // L'espion montre les sauts qui restent **vraiment** : `absorbBudget` a
     // déjà rendu ceux des tours partis sans rien produire, donc la jauge et
     // la trace ne peuvent pas se contredire.
-    const hopsLeft = this.absorbBudget(result, misses);
+    const hopsLeft = this.absorbBudget(result, bridge.misses);
     this.lastSpy = spyView(request, result, hopsLeft);
     const refused = result.refusals.find((verdict) => !verdict.allow);
     if (refused !== undefined && !refused.allow) {
       this.refuse(refused.reason, refused.rule);
     } else {
-      this.notice = noticeOf(result);
+      // L'avis du repli passe avant la réponse : il dit pourquoi la démo
+      // tourne en mode enregistré.
+      this.notice = bridge.notice ?? noticeOf(result);
       this.refusal = null;
     }
     this.emit({ type: "changed", stack: this.stack });
@@ -468,29 +483,14 @@ class ModelEngine implements CardwakeEngine {
   }
 }
 
-/** Le moteur réel : le contrat figé, plus la barre de discussion. */
-export type ModelEngineApi = CardwakeEngine & {
-  /** Parle à l'agent de la carte affichée (asynchrone en interne). */
-  chat(text: string): void;
-};
-
 /**
- * Attend la fin d'une action asynchrone : le moteur émet `changed` quand le
- * dispatch est réglé. À appeler AVANT l'action. Un seul exemplaire : les
- * tests et les preuves du site attendent de la même façon.
+ * Fabrique du moteur réel : c'est elle que le site et les tests utilisent.
+ * Le contrat public du moteur et `settled` vivent dans `api.ts`, ré-exportés
+ * ici pour que les écrans n'aient qu'un seul point d'entrée.
  */
-export function settled(engine: CardwakeEngine): Promise<void> {
-  return new Promise((resolve) => {
-    const off = engine.subscribe((event) => {
-      if (event.type === "changed") {
-        off();
-        resolve();
-      }
-    });
-  });
-}
-
-/** Fabrique du moteur réel : c'est elle que le site et les tests utilisent. */
 export function createModelEngine(options: ModelEngineOptions): ModelEngineApi {
   return new ModelEngine(options);
 }
+
+export { settled } from "./api";
+export type { ModelEngineApi } from "./api";

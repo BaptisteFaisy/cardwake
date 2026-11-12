@@ -41,6 +41,10 @@ export type TestEngine = {
 export type TestEngineOptions = {
   /** La passerelle des tours d'agent ; par défaut, la cassette du manoir. */
   gatewayOf?: (stack: Stack) => LlmGateway | null;
+  /** La cassette de repli, jouée quand le relais ne répond pas. */
+  fallbackOf?: (stack: Stack) => LlmGateway | null;
+  /** Le relais était-il attendu pour ce tour ? */
+  relayExpected?: (stack: Stack) => boolean;
 };
 
 /** Un moteur réel, branché sur une pile, avec les événements collectés. */

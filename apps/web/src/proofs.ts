@@ -1,10 +1,14 @@
 /**
- * Les six preuves recalculées dans le navigateur : chaque démonstration tourne
- * sur le moteur réel du site (`createModelEngine` et son adaptateur de
+ * Les sept preuves recalculées dans le navigateur : chaque démonstration
+ * tourne sur le moteur réel du site (`createModelEngine` et son adaptateur de
  * dispatch), sans modèle, sans réseau, sans clé (CAR-N-09). Le modèle scripté
  * (`FakeModel`) n'est qu'une liste de réponses jouée dans l'ordre — c'est le
  * moteur qui exécute vraiment les scripts, les outils, les messages et les
  * droits, et c'est lui qui décide du verdict.
+ *
+ * La septième preuve vise le relais local : elle se **saute** quand aucun
+ * relais n'est configuré ou quand le navigateur ne peut pas l'atteindre —
+ * une absence n'est pas un échec.
  *
  * Chaque démo rend `{ ok, lines }` : le verdict, et les étapes intermédiaires
  * telles que le moteur les a calculées. Comme la trace de l'espion, ces
@@ -21,10 +25,19 @@ import type { Op, Stack, Verdict } from "@cardwake/model";
 import { demoStack } from "./data";
 import { createModelEngine, settled } from "./engine/model-engine";
 import type { ModelEngineApi } from "./engine/model-engine";
+import { accessSettings } from "./engine/model-access";
+import { probeRelay } from "./engine/relay-probe";
 import type { SpyView } from "./engine/types";
 
 /** Le verdict d'une preuve et ses étapes intermédiaires, en anglais. */
-export type ProofDemo = { ok: boolean; lines: string[] };
+export type ProofDemo = {
+  /** La preuve tient-elle ? `false` quand elle est sautée. */
+  ok: boolean;
+  /** La preuve a-t-elle été sautée ? Une absence n'est pas un échec. */
+  skipped?: boolean;
+  /** Les lignes d'étapes, en anglais, affichées telles quelles. */
+  lines: string[];
+};
 
 /** Horloge fixe injectée dans chaque moteur de preuve (jamais `Date.now()`). */
 const PROOF_CLOCK = () => "2026-11-12T12:00:00.000Z";
@@ -240,6 +253,39 @@ export async function demoUndo(): Promise<ProofDemo> {
       `after the write: Subtotal = ${subtotal} (${digest(writtenText)})`,
       `after undo: ${digest(afterText)}`,
       `identical: ${beforeText === afterText ? "yes" : "no"}`,
+    ],
+  };
+}
+
+/**
+ * Le relais répond vraiment : la preuve vise le relais configuré dans les
+ * réglages. Quand aucun relais n'est configuré, ou quand le navigateur ne
+ * peut pas l'atteindre, elle est **sautée**, avec la raison : une absence
+ * n'est pas un échec, et la démo enregistrée joue toujours.
+ */
+export async function demoRelay(): Promise<ProofDemo> {
+  const settings = accessSettings();
+  if (settings.mode === "recorded") {
+    return {
+      ok: false,
+      skipped: true,
+      lines: ["no relay is configured: the site runs in recorded mode"],
+    };
+  }
+  const probe = await probeRelay(settings.baseUrl);
+  if (!probe.available) {
+    return {
+      ok: false,
+      skipped: true,
+      lines: [`the relay at ${probe.baseUrl} did not answer this browser`],
+    };
+  }
+  return {
+    ok: true,
+    lines: [
+      `relay: ${probe.baseUrl}`,
+      "GET /config answered",
+      `models: ${probe.models.join(", ") || "none listed"}`,
     ],
   };
 }

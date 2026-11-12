@@ -560,7 +560,7 @@ table.settings-table td {
   background: #fffdf8;
 }
 
-.key-row {
+.relay-row {
   display: flex;
   gap: 0.4rem;
   align-items: center;
