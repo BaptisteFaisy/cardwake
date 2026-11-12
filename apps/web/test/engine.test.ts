@@ -209,14 +209,21 @@ describe("journal (CAR-F-44, CAR-F-46)", () => {
   });
 });
 
-describe("clics et scripts non branchés", () => {
-  it("un bouton à script affiche « script not wired yet » sans transaction", () => {
+describe("clics et scripts branchés (lot C5b)", () => {
+  it("un bouton à script exécute son script au lieu de dire « script not wired yet »", async () => {
     const { engine, events } = makeEngine(demoStack());
     engine.navigate(10);
     engine.click(11); // « Show the amulet », possède un script
-    expect(engine.lastNotice()).toBe("script not wired yet");
-    expect(events.some((event) => event.type === "script-not-wired")).toBe(true);
-    expect(engine.journal().entries).toHaveLength(1); // la navigation seule
+    // Le contrat reste synchrone : le travail tourne en interne, on le laisse finir.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    // Le script a consulté l'agent (aucun enregistrement branché) puis écrit
+    // la réponse dans le champ « Says », verrouillé mais ouvert aux scripts.
+    expect(textOf(engine.state() as Stack, 10, 5)).toContain("did not answer");
+    const entries = engine.journal().entries;
+    expect(entries.length).toBeGreaterThan(1); // la navigation + la transaction du script
+    expect(entries[0].actor.kind).toBe("script"); // la plus récente : celle du script
+    expect(events.some((event) => event.type === "changed")).toBe(true);
+    expect(engine.journal().canRedo).toBe(false);
   });
 
   it("un bouton sans script ne produit ni transaction ni état", () => {
