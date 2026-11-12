@@ -1,0 +1,80 @@
+{
+  "id": "navigation-01",
+  "family": "navigation",
+  "phrase": "Clicking Next must show the card that follows this one in the stack.",
+  "object": "Hall/Next",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Hall",
+        "parts": [
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 2,
+            "kind": "button",
+            "label": "Next",
+            "name": "Next",
+            "rect": [
+              16,
+              40,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      },
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 3,
+        "ink": {},
+        "name": "Kitchen",
+        "parts": [],
+        "script": ""
+      },
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 4,
+        "ink": {},
+        "name": "Cellar",
+        "parts": [],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval navigation-01",
+    "nextId": 50,
+    "persona": "A small house: hall, kitchen, cellar.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Next"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "cardIs",
+      "name": "Kitchen"
+    }
+  ]
+}

@@ -17,6 +17,7 @@ const TEXTS: Record<string, string> = {
   "nav.journal": "Journal",
   "nav.reception": "Reception",
   "nav.settings": "Settings",
+  "nav.spy": "Spy",
   "nav.backToShelf": "Back to the shelf",
   "mode.play": "Play",
   "mode.build": "Build",
@@ -157,6 +158,20 @@ const TEXTS: Record<string, string> = {
   "settings.itemNothing": "Anything else",
   "settings.destNothing": "Nowhere. Everything else stays on your machine.",
   "settings.saved": "Settings are kept for this session.",
+
+  // Espion de messages (CAR-F-19)
+  "spy.title": "Message spy",
+  "spy.empty": "No message yet. Click something on a card to watch it travel.",
+  "spy.message": "Message",
+  "spy.target": "Target",
+  "spy.handledBy": "Handled by",
+  "spy.nobody": "Nobody handled it",
+  "spy.hopsLeft": "Hops left",
+  "spy.path": "Path",
+  "spy.trace": "Trace",
+  "spy.refusals": "Refusals",
+  "spy.refusalLine": "{reason} (rule: {rule})",
+  "spy.none": "Nothing to show.",
 
   // Les états du brief 12.2
   "state.emptyStack": "This stack has no cards yet.",

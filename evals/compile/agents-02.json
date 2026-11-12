@@ -1,0 +1,66 @@
+{
+  "id": "agents-02",
+  "family": "agents",
+  "phrase": "When a visitor chats with this card, greet them in one short line and write the greeting into field Says.",
+  "object": "Reception/Says",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": {
+          "awake": true,
+          "level": 2,
+          "persona": "You greet visitors in one short line and write your greeting into field Says. Your greeting always begins with the word Welcome.",
+          "speed": "fast"
+        },
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Reception",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Says",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval agents-02",
+    "nextId": 50,
+    "persona": "Chat-driven: the persona carries the behaviour; the game judges the field, never a script text.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "chat": "A visitor just walked in and looks around."
+    }
+  ],
+  "expect": [
+    {
+      "kind": "agentSaid",
+      "card": "Reception",
+      "contains": "welcome"
+    }
+  ]
+}

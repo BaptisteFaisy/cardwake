@@ -1,0 +1,101 @@
+{
+  "id": "navigation-03",
+  "family": "navigation",
+  "phrase": "Each press of Forward must show the next card of the stack, so two presses reach the last page.",
+  "object": "Page one/Forward",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Page one",
+        "parts": [
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Forward",
+            "name": "Forward",
+            "rect": [
+              16,
+              40,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      },
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 2,
+        "ink": {},
+        "name": "Page two",
+        "parts": [
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 5,
+            "kind": "button",
+            "label": "Forward",
+            "name": "Forward",
+            "rect": [
+              16,
+              40,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      },
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 3,
+        "ink": {},
+        "name": "Page three",
+        "parts": [],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval navigation-03",
+    "nextId": 50,
+    "persona": "A three-page booklet; Forward sits on the first two pages.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Forward"
+    },
+    {
+      "click": "Forward"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "cardIs",
+      "name": "Page three"
+    }
+  ]
+}

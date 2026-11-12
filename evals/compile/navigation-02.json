@@ -1,0 +1,70 @@
+{
+  "id": "navigation-02",
+  "family": "navigation",
+  "phrase": "Open the vault takes the visitor straight to the card named Vault.",
+  "object": "Lobby/Open the vault",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Lobby",
+        "parts": [
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 2,
+            "kind": "button",
+            "label": "Open the vault",
+            "name": "Open the vault",
+            "rect": [
+              16,
+              40,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      },
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 3,
+        "ink": {},
+        "name": "Vault",
+        "parts": [],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval navigation-02",
+    "nextId": 50,
+    "persona": "A bank lobby with a direct door to the vault.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Open the vault"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "cardIs",
+      "name": "Vault"
+    }
+  ]
+}

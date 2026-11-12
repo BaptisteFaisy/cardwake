@@ -1,0 +1,113 @@
+{
+  "id": "calcul-07",
+  "family": "calcul",
+  "phrase": "When Share is clicked, divide the bill in field Bill by the number of people in field People, rounded to two decimals, and show the result in field Share.",
+  "object": "Split/Share",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Split",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Bill",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "87",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "People",
+            "rect": [
+              16,
+              72,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "3",
+            "visible": true
+          },
+          {
+            "id": 4,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Share",
+            "rect": [
+              16,
+              104,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 5,
+            "kind": "button",
+            "label": "Share",
+            "name": "Share",
+            "rect": [
+              16,
+              136,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval calcul-07",
+    "nextId": 50,
+    "persona": "Friends splitting a restaurant bill.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Share"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Split",
+      "field": "Share",
+      "value": "29"
+    }
+  ]
+}

@@ -10,6 +10,8 @@ export * from "./budget";
 export * from "./cassette-recorder";
 export * from "./loop";
 export * from "./queue";
+export * from "./write-script";
+export * from "./script-prompt";
 export * from "./gateway/canon";
 export * from "./gateway/sha256";
 export * from "./gateway/cassette";

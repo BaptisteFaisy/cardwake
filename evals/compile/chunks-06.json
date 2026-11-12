@@ -1,0 +1,96 @@
+{
+  "id": "chunks-06",
+  "family": "chunks",
+  "phrase": "When Sort is clicked, arrange the numbers of field List from the smallest to the largest and put the sorted list into field Sorted, one number per line.",
+  "object": "Prices/Sort",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Prices",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "List",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "30\n5\n12",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Sorted",
+            "rect": [
+              16,
+              144,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Sort",
+            "name": "Sort",
+            "rect": [
+              16,
+              248,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval chunks-06",
+    "nextId": 50,
+    "persona": "A price list sorted numerically, not as text.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Sort"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Prices",
+      "field": "Sorted",
+      "value": "5\n12\n30"
+    }
+  ]
+}

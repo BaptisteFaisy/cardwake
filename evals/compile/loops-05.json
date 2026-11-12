@@ -1,0 +1,79 @@
+{
+  "id": "loops-05",
+  "family": "loops",
+  "phrase": "Start writes a countdown from five down to one into field Countdown, one number per line, and nothing else.",
+  "object": "Launch/Start",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Launch",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Countdown",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 3,
+            "kind": "button",
+            "label": "Start",
+            "name": "Start",
+            "rect": [
+              16,
+              144,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval loops-05",
+    "nextId": 50,
+    "persona": "A launch card counts backwards with a descending loop.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Start"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Launch",
+      "field": "Countdown",
+      "value": "5\n4\n3\n2\n1"
+    }
+  ]
+}
