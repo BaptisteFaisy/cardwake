@@ -116,6 +116,15 @@ function mapPart(stack: Stack, partId: number, patch: (part: Part) => Part): Sta
   };
 }
 
+/**
+ * Un identifiant alloué ne doit jamais être réutilisé (CAR-P-10) : toute
+ * création relève `nextId` au-dessus du plus grand identifiant introduit.
+ */
+function bumpNextId(stack: Stack, ids: number[]): Stack {
+  const highest = ids.reduce((max, id) => Math.max(max, id), 0);
+  return highest >= stack.nextId ? { ...stack, nextId: highest + 1 } : stack;
+}
+
 /** Applique une opération ; une opération impossible rend la pile inchangée. */
 export function applyOp(stack: Stack, op: Op): Stack {
   switch (op.kind) {
@@ -129,18 +138,20 @@ export function applyOp(stack: Stack, op: Op): Stack {
       if (op.target.kind === "card") return withCard(stack, op.target.cardId, (card) => ({ ...card, script: op.after }));
       if (op.target.kind === "background") return withBackground(stack, op.target.backgroundId, (b) => ({ ...b, script: op.after }));
       return { ...stack, script: op.after };
-    case "createPart":
-      if (op.backgroundId !== undefined) {
-        return withBackground(stack, op.backgroundId, (b) => ({ ...b, parts: insert(b.parts, op.part, op.index) }));
-      }
-      return withCard(stack, op.cardId, (card) => ({ ...card, parts: insert(card.parts, op.part, op.index) }));
+    case "createPart": {
+      const grown =
+        op.backgroundId !== undefined
+          ? withBackground(stack, op.backgroundId, (b) => ({ ...b, parts: insert(b.parts, op.part, op.index) }))
+          : withCard(stack, op.cardId, (card) => ({ ...card, parts: insert(card.parts, op.part, op.index) }));
+      return bumpNextId(grown, [op.part.id]);
+    }
     case "deletePart":
       if (op.backgroundId !== undefined) {
         return withBackground(stack, op.backgroundId, (b) => ({ ...b, parts: b.parts.filter((p) => p.id !== op.part.id) }));
       }
       return withCard(stack, op.cardId, (card) => ({ ...card, parts: card.parts.filter((p) => p.id !== op.part.id) }));
     case "createCard":
-      return { ...stack, cards: insert(stack.cards, op.card, op.index) };
+      return bumpNextId({ ...stack, cards: insert(stack.cards, op.card, op.index) }, [op.card.id]);
     case "deleteCard":
       return { ...stack, cards: stack.cards.filter((card) => card.id !== op.card.id) };
     case "moveCard":
@@ -148,7 +159,7 @@ export function applyOp(stack: Stack, op: Op): Stack {
     case "navigate":
       return { ...stack, currentCardId: op.after };
     case "createBackground":
-      return { ...stack, backgrounds: [...stack.backgrounds, op.background] };
+      return bumpNextId({ ...stack, backgrounds: [...stack.backgrounds, op.background] }, [op.background.id]);
     case "deleteBackground":
       return { ...stack, backgrounds: stack.backgrounds.filter((b) => b.id !== op.background.id) };
     case "setAgent":
