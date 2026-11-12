@@ -7,9 +7,9 @@
  * sans clé : les réponses d'agent sont écrites à la main. Une démonstration
  * qui échoue lève une erreur ; `runDemo` la convertit en verdict.
  *
- * Les piles chargées sont celles qui sont livrées (`stacks/*/stack.json`),
- * pas des copies de test : ce que la démonstration prouve est ce que
- * l'application embarque.
+ * Les piles chargées sont celles qui sont livrées (les `stack.json` du
+ * dossier `stacks`), pas des copies de test : ce que la démonstration
+ * prouve est ce que l'application embarque.
  */
 
 import { readFileSync } from "node:fs";
@@ -136,7 +136,7 @@ async function spyDemo(): Promise<string> {
     return "I cannot write my answer into a locked field.";
   };
   const result = await dispatcherFor(stack, turn).chat(cardIdOf(stack, "Guard"), "Who goes there?");
-  check(result.refusals.some((refusal) => refusal.rule === "locked-field"), "expected a locked-field refusal");
+  check(result.refusals.some((refusal) => !refusal.allow && refusal.rule === "locked-field"), "expected a locked-field refusal");
   check(result.path.includes('card "Guard"'), `path misses the Guard card: ${result.path.join(" > ")}`);
   check(result.trace.some((line) => line.includes("refused (locked-field)")), "the trace hides the refusal");
   return `spy: the path shows card "Guard" and the refusal rule "locked-field" is on record`;
