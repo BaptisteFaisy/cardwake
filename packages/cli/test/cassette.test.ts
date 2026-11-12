@@ -4,6 +4,22 @@ import { describe, expect, it } from "vitest";
 import { cassetteCommand, cassettePathFor, loadCassette } from "../src/commands/cassette";
 import { capture, cliArgs, fakeEntry, stackPath, tempStack } from "./helpers";
 
+import { copyFileSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+/**
+ * Une pile SANS cassette : les trois piles de démonstration en portent
+ * désormais une (`stacks/<pile>/cassette.json`), donc les cas « cassette
+ * absente » doivent partir d'une copie isolée dans un dossier temporaire.
+ */
+function bareStackPath(slug: string): string {
+  const dir = mkdtempSync(join(tmpdir(), "cardwake-bare-"));
+  const target = join(dir, "stack.json");
+  copyFileSync(stackPath(slug), target);
+  return target;
+}
+
 const FP = "ab".repeat(32);
 
 describe("cassette list", () => {
@@ -21,7 +37,7 @@ describe("cassette list", () => {
 
   it("says when no cassette file sits next to the stack", () => {
     const captured = capture();
-    const code = cassetteCommand(cliArgs({ command: "cassette", sub: "list", positionals: [stackPath("manor")] }), captured.io);
+    const code = cassetteCommand(cliArgs({ command: "cassette", sub: "list", positionals: [bareStackPath("manor")] }), captured.io);
     expect(code).toBe(0);
     expect(captured.out.join("\n")).toContain("no cassette file");
   });
@@ -57,7 +73,7 @@ describe("cassette verify", () => {
   it("accepts several stacks and a missing cassette file", () => {
     const captured = capture();
     const code = cassetteCommand(
-      cliArgs({ command: "cassette", sub: "verify", positionals: [stackPath("manor"), stackPath("quotes")] }),
+      cliArgs({ command: "cassette", sub: "verify", positionals: [bareStackPath("manor"), bareStackPath("quotes")] }),
       captured.io,
     );
     expect(code).toBe(0);

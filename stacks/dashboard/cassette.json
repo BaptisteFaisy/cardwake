@@ -1,0 +1,22 @@
+{
+  "mode": "cassette",
+  "entries": [
+    {
+      "fingerprint": "844082402c7ccaad827e0751b4138c011ac0d864050c20ed417908ebb8bfba9e",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "end",
+        "blocks": [
+          {
+            "type": "text",
+            "text": "On Monday you made two calls and finished one repair. Wednesday brought a late delivery from the supplier. Friday went to paperwork."
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    }
+  ]
+}

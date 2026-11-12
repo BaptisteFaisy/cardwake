@@ -7,6 +7,7 @@ export * from "./types";
 export * from "./view";
 export * from "./tools";
 export * from "./budget";
+export * from "./cassette-recorder";
 export * from "./loop";
 export * from "./queue";
 export * from "./gateway/canon";

@@ -1,0 +1,204 @@
+{
+  "mode": "cassette",
+  "entries": [
+    {
+      "fingerprint": "0ea0f3ee95066b3fff1a327a166c272649a431a6b6ef7da8b51fe5c0bcc65f11",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "tool_use",
+        "blocks": [
+          {
+            "type": "tool_use",
+            "id": "call-4",
+            "name": "write_field",
+            "input": {
+              "field": "Memory",
+              "text": " The guard saw the silver amulet tonight.",
+              "mode": "append"
+            }
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    },
+    {
+      "fingerprint": "21e0b92ac4813d713fd86dc57218d10fa74393d82412db52d33662710eac5e80",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "end",
+        "blocks": [
+          {
+            "type": "text",
+            "text": "The silver key opens the pantry, and the pantry keeps its own secrets."
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    },
+    {
+      "fingerprint": "2d1557b23b3d48e6e57a97668177fcd0612ba66a3ee2760f47a3688bb523098e",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "tool_use",
+        "blocks": [
+          {
+            "type": "tool_use",
+            "id": "call-3",
+            "name": "send_message",
+            "input": {
+              "to_card": "Cook",
+              "text": "A stranger carries the silver amulet. Watch the key."
+            }
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    },
+    {
+      "fingerprint": "71c53d5849b860cc9743bca102687b203ad431aeefeb990b593fa0a81524c187",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "end",
+        "blocks": [
+          {
+            "type": "text",
+            "text": "Where did you get that? Put it away before the master sees it."
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    },
+    {
+      "fingerprint": "a1e3a50c7de9d84928f8a2caa205824ce64a65abfe5423b88f2e23a17a1a25c6",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "end",
+        "blocks": [
+          {
+            "type": "text",
+            "text": "Let the master see it, then. The key stays where it sleeps."
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    },
+    {
+      "fingerprint": "abd94fe3149dd1463bffba3d64975c0fd7c971358584e93cd95a26f374af58e4",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "end",
+        "blocks": [
+          {
+            "type": "text",
+            "text": "Nobody is expected on a night like this. Give a name the house remembers."
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    },
+    {
+      "fingerprint": "ccfa35d14ede2497c84af5c18209b6f0f0ca2d41e01dc82bcc6890ef6a1da05e",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "tool_use",
+        "blocks": [
+          {
+            "type": "tool_use",
+            "id": "call-5",
+            "name": "write_field",
+            "input": {
+              "field": "Memory",
+              "text": " A stranger asked about the silver key.",
+              "mode": "append"
+            }
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    },
+    {
+      "fingerprint": "da31d337e4d514010d2ea28630e529d3376332258b24b80397ca0d7438f098a9",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "tool_use",
+        "blocks": [
+          {
+            "type": "tool_use",
+            "id": "call-2",
+            "name": "write_field",
+            "input": {
+              "field": "Memory",
+              "text": " A visitor carried a silver amulet.",
+              "mode": "append"
+            }
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    },
+    {
+      "fingerprint": "e47a3f59712574efd8cf4a5c235b32ef89f4703ba6938c6eb1eefe9b02c72efd",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "end",
+        "blocks": [
+          {
+            "type": "text",
+            "text": "Bread for tomorrow, and nothing for strangers."
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    },
+    {
+      "fingerprint": "ee4b8dc7e6dfbfe0b6278a1322be9c2c4b9ed5568534e79bf45cf502aaee4d44",
+      "purpose": "agent-turn",
+      "response": {
+        "stop": "tool_use",
+        "blocks": [
+          {
+            "type": "tool_use",
+            "id": "call-1",
+            "name": "write_field",
+            "input": {
+              "field": "Mood",
+              "text": "alarmed",
+              "mode": "replace"
+            }
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    }
+  ]
+}
