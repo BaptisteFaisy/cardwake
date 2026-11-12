@@ -21,7 +21,9 @@
     "preview": "npm run preview --workspace @cardwake/web",
     "guards": "python3 scripts/guards/run_all.py",
     "limits": "python3 scripts/guards/check_limits.py",
-    "ci": "npm run typecheck && npm run test:ci && npm run guards"
+    "ci": "npm run typecheck && npm run test:ci && npm run guards",
+    "preuves": "vite-node packages/proofs/cli.ts",
+    "preuves:rapport": "vite-node packages/proofs/cli.ts --rapport"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
