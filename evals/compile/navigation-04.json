@@ -1,0 +1,70 @@
+{
+  "id": "navigation-04",
+  "family": "navigation",
+  "phrase": "Clicking Back must return to the card the visitor came from, the one before this card in the stack.",
+  "object": "Details/Back",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Intro",
+        "parts": [],
+        "script": ""
+      },
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 2,
+        "ink": {},
+        "name": "Details",
+        "parts": [
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 3,
+            "kind": "button",
+            "label": "Back",
+            "name": "Back",
+            "rect": [
+              16,
+              40,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 2,
+    "format": "cardwake/1",
+    "name": "Eval navigation-04",
+    "nextId": 50,
+    "persona": "A guided tour: the details card always goes back to the intro.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Back"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "cardIs",
+      "name": "Intro"
+    }
+  ]
+}

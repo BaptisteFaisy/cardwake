@@ -1,0 +1,103 @@
+{
+  "id": "navigation-06",
+  "family": "navigation",
+  "phrase": "Go must show the card whose name was typed into field Where.",
+  "object": "Index/Go",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Index",
+        "parts": [
+          {
+            "id": 4,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Where",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 5,
+            "kind": "button",
+            "label": "Go",
+            "name": "Go",
+            "rect": [
+              16,
+              72,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      },
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 2,
+        "ink": {},
+        "name": "Recipes",
+        "parts": [],
+        "script": ""
+      },
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 3,
+        "ink": {},
+        "name": "Garden",
+        "parts": [],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval navigation-06",
+    "nextId": 50,
+    "persona": "An index card sends the visitor to the card named in field Where.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "type": {
+        "field": "Where",
+        "text": "Garden"
+      }
+    },
+    {
+      "click": "Go"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "cardIs",
+      "name": "Garden"
+    }
+  ]
+}

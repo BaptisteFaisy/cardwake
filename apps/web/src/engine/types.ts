@@ -48,6 +48,28 @@ export type BudgetView = {
   hopsExhausted: boolean;
 };
 
+/**
+ * L'espion de messages (CAR-F-19) : la trace du dernier `DispatchResult`,
+ * telle que le `Dispatcher` la rend — ce que le message était, où il est
+ * passé, qui l'a traité, ce qui restait de sauts, et chaque ligne de trace.
+ */
+export type SpyView = {
+  /** Nom du message envoyé, par exemple `mouseUp`. */
+  message: string | null;
+  /** Sa cible, en anglais lisible. */
+  target: string | null;
+  /** Objets traversés, dans l'ordre. */
+  path: string[];
+  /** Celui qui a traité le message, ou `null` si personne. */
+  handledBy: string | null;
+  /** Sauts restants à la fin de l'action (7.6). */
+  hopsLeft: number;
+  /** La trace, ligne à ligne. */
+  trace: string[];
+  /** Les refus rencontrés pendant l'action, avec la règle qui les motive. */
+  refusals: Refusal[];
+};
+
 /** Ce que l'écran du journal a besoin de savoir. */
 export type JournalView = {
   /** Transactions, de la plus récente à la plus ancienne. */
@@ -73,6 +95,11 @@ export interface CardwakeEngine {
   navigate(cardId: number | null): void;
   /** Clic humain sur un élément de la carte affichée. */
   click(partId: number): void;
+  /**
+   * Parle à l'agent de la carte affichée (CAR-F-41). Optionnel : un moteur
+   * qui ne sait pas le faire laisse la barre le dire honnêtement.
+   */
+  chat?(text: string): void;
   /** Saisie humaine dans un champ : produit un `setText` sans encre d'agent. */
   editField(partId: number, text: string): void;
   /** Change de mode ; en mode Jouer, la structure devient intouchable. */
@@ -103,6 +130,8 @@ export interface CardwakeEngine {
   lastRefusal(): Refusal | null;
   /** Le dernier état à dire (script non branché, agent muet…). */
   lastNotice(): string | null;
+  /** La trace du dernier message : l'espion de messages (CAR-F-19). */
+  spy(): SpyView;
 
   /** S'abonne aux événements ; rend la fonction de désabonnement. */
   subscribe(listener: (event: EngineEvent) => void): () => void;

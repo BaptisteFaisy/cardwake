@@ -9,7 +9,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { Card, Stack } from "@cardwake/model";
-import type { BudgetView, CardwakeEngine, JournalView, Mode, Refusal } from "./engine/types";
+import type { BudgetView, CardwakeEngine, JournalView, Mode, Refusal, SpyView } from "./engine/types";
 
 /** Tout ce qu'un écran peut lire d'un coup, sans effet de bord. */
 export type CardwakeSnapshot = {
@@ -21,6 +21,8 @@ export type CardwakeSnapshot = {
   budget: BudgetView;
   refusal: Refusal | null;
   notice: string | null;
+  /** L'espion de messages (CAR-F-19) : la dernière action, décrite. */
+  spy: SpyView;
 };
 
 /** Relit le moteur : appelé à chaque événement, jamais pendant le rendu. */
@@ -34,6 +36,7 @@ export function readSnapshot(engine: CardwakeEngine): CardwakeSnapshot {
     budget: engine.budget(),
     refusal: engine.lastRefusal(),
     notice: engine.lastNotice(),
+    spy: engine.spy(),
   };
 }
 

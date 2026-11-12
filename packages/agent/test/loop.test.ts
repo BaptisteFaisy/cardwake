@@ -17,7 +17,7 @@ import {
   textResponse,
   toolUseResponse,
 } from "../src/testing/fake-model";
-import { settings } from "./fixtures";
+import { field, settings } from "./fixtures";
 import { harness, stackAtLevel, toolResultsOf, turnRequest } from "./harness";
 
 const REPLY = toolUseResponse("reply", { text: "Hello back." }, "c1");
@@ -225,5 +225,62 @@ describe("runAgentTurn — propose_script ne modifie rien", () => {
     expect(toolResultsOf(model)[0].content).toBe(
       'Proposed script for button "Serve" (awaiting acceptance)',
     );
+  });
+});
+
+describe("runAgentTurn — la carte de l'agent, et elle seule", () => {
+  it("un champ verrouillé refuse l'écriture", async () => {
+    const stack = stackAtLevel(3);
+    const mood = stack.cards[0].parts.find((part) => part.name === "Mood");
+    if (mood?.kind === "field") mood.locked = true;
+    const model = new FakeModel({
+      responses: [
+        toolUseResponse("write_field", { field: "Mood", text: "hacked", mode: "replace" }, "c1"),
+        toolUseResponse("reply", { text: "I cannot write there." }, "c2"),
+        textResponse(""),
+      ],
+    });
+    const h = harness(model, { stack });
+    const outcome = await runAgentTurn(turnRequest(), h.ctx);
+    const result = toolResultsOf(model)[0];
+    expect(result.isError).toBe(true);
+    expect(result.content).toMatch(/locked/i);
+    const after = h.host.stack.cards[0].parts.find((part) => part.name === "Mood");
+    expect(after?.kind === "field" && after.text).toBe("calm");
+    expect(outcome.reply).toBe("I cannot write there.");
+  });
+
+  it("un champ d'une autre carte n'est pas atteint, même au niveau 5", async () => {
+    const stack = stackAtLevel(5);
+    const pantry = stack.cards.find((card) => card.id === 2);
+    if (pantry) pantry.parts = [field(30, "Secret", "beans")];
+    const model = new FakeModel({
+      responses: [
+        toolUseResponse("write_field", { field: "Secret", text: "stolen", mode: "replace" }, "c1"),
+        toolUseResponse("reply", { text: "Not mine." }, "c2"),
+        textResponse(""),
+      ],
+    });
+    const h = harness(model, { stack, level: 5 });
+    const outcome = await runAgentTurn(turnRequest(), h.ctx);
+    expect(toolResultsOf(model)[0].isError).toBe(true);
+    const secret = h.host.stack.cards[1].parts.find((part) => part.name === "Secret");
+    expect(secret?.kind === "field" && secret.text).toBe("beans");
+    expect(outcome.reply).toBe("Not mine.");
+  });
+
+  it("la requête ne porte que les quatre blocs", async () => {
+    const stack = stackAtLevel(3);
+    const pantry = stack.cards.find((card) => card.id === 2);
+    if (pantry) pantry.parts = [field(30, "Secret", "SECRETBEANS")];
+    const model = new FakeModel({ responses: [textResponse("ok.")] });
+    const h = harness(model, { stack });
+    await runAgentTurn(turnRequest({ text: "A visitor came." }), h.ctx);
+    const request = model.requests[0];
+    const payload = JSON.stringify(request);
+    expect(request.system).toContain("You are the agent of one card");
+    expect(payload).toContain("A visitor came.");
+    expect(payload).not.toContain("SECRETBEANS");
+    expect(payload).not.toMatch(/sk-[A-Za-z0-9_-]{8,}/);
   });
 });

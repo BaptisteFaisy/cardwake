@@ -1,0 +1,134 @@
+{
+  "id": "agents-03",
+  "family": "agents",
+  "phrase": "Send to kitchen wakes the kitchen card's agent with whatever was typed into field Order, so the cook writes it down on the ticket.",
+  "object": "Waiter/Send to kitchen",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Waiter",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Order",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Log",
+            "rect": [
+              16,
+              72,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Send to kitchen",
+            "name": "Send to kitchen",
+            "rect": [
+              16,
+              104,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      },
+      {
+        "agent": {
+          "awake": true,
+          "level": 2,
+          "persona": "You are the cook. When the waiter tells you about an order, write it on one line into field Ticket, starting with the word ORDER.",
+          "speed": "fast"
+        },
+        "background": null,
+        "content": {},
+        "id": 5,
+        "ink": {},
+        "name": "Kitchen",
+        "parts": [
+          {
+            "id": 6,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Ticket",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval agents-03",
+    "nextId": 50,
+    "persona": "One card tells another card's agent; the ticket shows the message arrived.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "type": {
+        "field": "Order",
+        "text": "Two soups"
+      }
+    },
+    {
+      "click": "Send to kitchen"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "messageSent",
+      "to": "Kitchen",
+      "contains": "two soups"
+    }
+  ]
+}

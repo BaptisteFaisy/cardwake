@@ -1,0 +1,84 @@
+{
+  "id": "loops-02",
+  "family": "loops",
+  "phrase": "Draw fills field Table with the five times table from 1 to 5, one row per line, written exactly as n x 5 = result.",
+  "object": "Chalkboard/Draw",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Chalkboard",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Table",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 3,
+            "kind": "button",
+            "label": "Draw",
+            "name": "Draw",
+            "rect": [
+              16,
+              144,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval loops-02",
+    "nextId": 50,
+    "persona": "A classroom chalkboard that draws a multiplication table.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Draw"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Chalkboard",
+      "field": "Table",
+      "value": "1 x 5 = 5\n2 x 5 = 10\n3 x 5 = 15\n4 x 5 = 20\n5 x 5 = 25"
+    },
+    {
+      "kind": "partCount",
+      "card": "Chalkboard",
+      "count": 2
+    }
+  ]
+}

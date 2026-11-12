@@ -3,53 +3,18 @@
  *
  * Tout se joue sur les vraies piles de démonstration et sur `@cardwake/model` :
  * ouverture, navigation, saisie, annulation, refus en mode Jouer, journal,
- * abonnés, horloge injectée et graine déterministe.
+ * abonnés, horloge injectée et graine déterministe. Les fixtures sont
+ * partagées avec les autres tests du site (`test/fixtures`).
  */
 import { describe, expect, it } from "vitest";
 import {
   createButton,
   createCard,
   createStack,
-  parseStackFile,
 } from "@cardwake/model";
 import type { Stack } from "@cardwake/model";
-import manorRaw from "../../../stacks/manor/stack.json";
-import { createModelEngine } from "../src/engine/model-engine";
-import type { CardwakeEngine, EngineEvent } from "../src/engine/types";
-
-/** Une pile de démo, validée par le schéma comme le fait le site. */
-function demoStack(): Stack {
-  const parsed = parseStackFile(JSON.stringify(manorRaw));
-  if (!parsed.ok) throw new Error(`manor stack refused: ${parsed.errors.join(", ")}`);
-  return parsed.stack;
-}
-
-/** Horloge contrôlée : chaque appel avance d'une seconde fictive. */
-function fakeClock(): { clock: () => string; now: () => string } {
-  let ticks = 0;
-  return {
-    clock: () => `2026-11-11T12:00:${String(ticks++).padStart(2, "0")}Z`,
-    now: () => `2026-11-11T12:00:${String(Math.max(0, ticks - 1)).padStart(2, "0")}Z`,
-  };
-}
-
-function makeEngine(stack?: Stack): { engine: CardwakeEngine; events: EngineEvent[]; clock: () => string; now: () => string } {
-  const { clock, now } = fakeClock();
-  const engine = createModelEngine({ clock, seed: 42 });
-  const events: EngineEvent[] = [];
-  engine.subscribe((event) => events.push(event));
-  if (stack) engine.openStack(stack);
-  return { engine, events, clock, now };
-}
-
-/** Le texte courant d'un champ, lu dans la pile (fond ou carte). */
-function textOf(stack: Stack, cardId: number, partId: number): string {
-  const card = stack.cards.find((item) => item.id === cardId);
-  if (!card) throw new Error("no such card");
-  const own = card.parts.find((part) => part.id === partId);
-  if (own && own.kind === "field") return own.text;
-  return card.content[String(partId)] ?? "";
-}
+import { demoStack, makeEngine, settled, textOf } from "./fixtures";
+import type { EngineEvent } from "../src/engine/types";
 
 describe("ouverture et navigation", () => {
   it("ouvre une pile de démo et affiche sa carte courante", () => {
@@ -210,18 +175,20 @@ describe("journal (CAR-F-44, CAR-F-46)", () => {
 });
 
 describe("clics et scripts branchés (lot C5b)", () => {
-  it("un bouton à script exécute son script au lieu de dire « script not wired yet »", async () => {
+  it("un bouton à script exécute son script et l'agent enregistré répond", async () => {
     const { engine, events } = makeEngine(demoStack());
     engine.navigate(10);
+    const done = settled(engine);
     engine.click(11); // « Show the amulet », possède un script
-    // Le contrat reste synchrone : le travail tourne en interne, on le laisse finir.
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    // Le script a consulté l'agent (aucun enregistrement branché) puis écrit
-    // la réponse dans le champ « Says », verrouillé mais ouvert aux scripts.
-    expect(textOf(engine.state() as Stack, 10, 5)).toContain("did not answer");
+    // Le contrat reste synchrone : le travail tourne en interne, on attend
+    // qu'il soit fini. Le script a consulté l'agent : la cassette du manoir
+    // répond, et la réponse est écrite dans « Says », verrouillé mais ouvert
+    // aux scripts.
+    await done;
+    expect(textOf(engine.state() as Stack, 10, 5)).toContain("Put it away before the master sees it");
     const entries = engine.journal().entries;
-    expect(entries.length).toBeGreaterThan(1); // la navigation + la transaction du script
-    expect(entries[0].actor.kind).toBe("script"); // la plus récente : celle du script
+    expect(entries.length).toBeGreaterThan(1); // la navigation + le script + deux tours
+    expect(entries[0].actor.kind).toBe("agent"); // la plus récente : le tour du cuisinier
     expect(events.some((event) => event.type === "changed")).toBe(true);
     expect(engine.journal().canRedo).toBe(false);
   });

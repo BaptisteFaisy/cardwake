@@ -1,0 +1,142 @@
+{
+  "id": "loops-01",
+  "family": "loops",
+  "phrase": "Total adds up quantity times price for every line of field Lines, then fills field Subtotal with the sum, field VAT with ten percent of it and field Total with the grand total, each rounded to two decimals.",
+  "object": "Invoice/Total",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Invoice",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Lines",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "Paper,3,4\nStapler,1,12",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Subtotal",
+            "rect": [
+              16,
+              144,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "id": 4,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "VAT",
+            "rect": [
+              16,
+              176,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "id": 5,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Total",
+            "rect": [
+              16,
+              208,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 6,
+            "kind": "button",
+            "label": "Total",
+            "name": "Total",
+            "rect": [
+              16,
+              240,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval loops-01",
+    "nextId": 50,
+    "persona": "The full quote walk: one loop over the lines, three results.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Total"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldEquals",
+      "card": "Invoice",
+      "field": "Subtotal",
+      "value": "24"
+    },
+    {
+      "kind": "fieldEquals",
+      "card": "Invoice",
+      "field": "VAT",
+      "value": "2.4"
+    },
+    {
+      "kind": "fieldEquals",
+      "card": "Invoice",
+      "field": "Total",
+      "value": "26.4"
+    }
+  ]
+}

@@ -19,10 +19,11 @@ import { CardBuild } from "./screens/CardBuild";
 import { Journal } from "./screens/Journal";
 import { Reception } from "./screens/Reception";
 import { Settings } from "./screens/Settings";
+import { Spy } from "./screens/Spy";
 import "./styles/two-inks.css";
 
 /** Les sept écrans du brief (12.1), routés sans bibliothèque externe. */
-export type Screen = "shelf" | "card" | "journal" | "reception" | "settings";
+export type Screen = "shelf" | "card" | "journal" | "reception" | "settings" | "spy";
 
 export function App({ engine }: { engine: CardwakeEngine }): JSX.Element {
   return (
@@ -98,6 +99,7 @@ function TopBar({ screen, go, hasStack }: TopBarProps): JSX.Element {
         {navButton("shelf", t("nav.shelf"))}
         {navButton("card", t("mode.play"), hasStack)}
         {navButton("journal", t("nav.journal"), hasStack)}
+        {navButton("spy", t("nav.spy"), hasStack)}
         {navButton("reception", t("nav.reception"), hasStack)}
         {navButton("settings", t("nav.settings"))}
       </nav>
@@ -141,6 +143,8 @@ function Body(props: BodyProps): JSX.Element {
       return <Reception />;
     case "settings":
       return <Settings />;
+    case "spy":
+      return <Spy />;
   }
 }
 

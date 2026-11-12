@@ -10,56 +10,47 @@
  * clic sur un bouton à script exécute le handler `mouseUp` via le
  * `Dispatcher`, resynchronise la pile et notifie les abonnés (`changed`) ;
  * `click(partId): void` reste synchrone, le travail asynchrone est interne.
+ *
+ * Les tours d'agent passent par le pont enregistré (`agent-bridge`) : la
+ * passerelle est la cassette de la pile, jamais le réseau, jamais une clé
+ * (CAR-N-09). Un tour qui n'a pas d'enregistrement ne consomme ni tour ni
+ * saut, et le moteur rend le saut que le `Dispatcher` avait avancé.
  */
 
 import { ActionBudgetTracker, SessionBudgetTracker } from "@cardwake/agent";
+import type { LlmGateway } from "@cardwake/agent";
 import type { Actor, PropName } from "@cardwake/lang";
-import {
-  Journal,
-  applyOps,
-  authorizeOp,
-  createBackground,
-  createButton,
-  createCard,
-  createField,
-  currentInk,
-  currentText,
-} from "@cardwake/model";
-import type { Card, DispatchResult, Op, Part, Rect, Stack, Verdict } from "@cardwake/model";
-import type { BudgetView, CardwakeEngine, EngineEvent, JournalView, Mode, Refusal } from "./types";
+import { Journal, applyOps, authorizeOp, clampSettings, currentInk, currentText } from "@cardwake/model";
+import type { Card, DispatchResult, Op, Rect, Stack, Verdict } from "@cardwake/model";
+import type { BudgetView, CardwakeEngine, EngineEvent, JournalView, Mode, Refusal, SpyView } from "./types";
 import { createDispatchAdapter, noticeOf, runDispatch, stepSeed } from "./dispatch-adapter";
 import type { DispatchAdapter, DispatchRequest } from "./dispatch-adapter";
+import { createAgentBridge } from "./agent-bridge";
+import { cassetteForStack } from "../data/cassettes";
+import {
+  addBackgroundOps,
+  addCardOps,
+  addPartOps,
+  deletePartOps,
+  fieldTarget,
+  findPart,
+  setPartPropOps,
+  setPartRectOps,
+} from "./ops";
+import { describeRequest, emptySpy, spyView } from "./spy";
+import type { SpyRequest } from "./spy";
 
 export type ModelEngineOptions = {
   /** Horloge injectée : rend un horodatage ISO (CAR-F-17). */
   clock: () => string;
   /** Graine de la session : les graines des transactions en découlent. */
   seed: number;
+  /**
+   * La passerelle des tours d'agent : la cassette de la pile par défaut,
+   * jamais le réseau. Les tests peuvent en injecter une autre.
+   */
+  gatewayOf?: (stack: Stack) => LlmGateway | null;
 };
-
-/** Cible d'un champ sur une carte : propre à la carte, ou champ de son fond. */
-type FieldTarget = { backgroundId?: number; locked: boolean; part: Part };
-
-/**
- * Valeur texte actuelle d'une propriété d'élément : miroir local de `ops.ts`
- * (fonction non exportée, contrat figé), borné aux propriétés de l'inspecteur.
- * `before` doit être exact pour que l'inverse du journal ramène à l'état d'avant.
- */
-function readPropText(part: Part, prop: PropName): string {
-  if (prop === "name") return part.name;
-  if (prop === "visible") return String(part.visible);
-  if (prop === "style") return part.style;
-  if (prop === "rect") return part.rect.join(",");
-  if (part.kind === "field") {
-    if (prop === "locked") return String(part.locked);
-    if (prop === "text") return part.text;
-    return "";
-  }
-  if (prop === "label") return part.label;
-  if (prop === "enabled") return String(part.enabled);
-  if (prop === "hilite") return String(part.hilite);
-  return "";
-}
 
 class ModelEngine implements CardwakeEngine {
   private stack: Stack | null = null;
@@ -71,12 +62,15 @@ class ModelEngine implements CardwakeEngine {
   private notice: string | null = null;
   private redoable = false;
   private seed: number;
+  private lastSpy: SpyView | null = null;
   private readonly clock: () => string;
+  private readonly gatewayOf: (stack: Stack) => LlmGateway | null;
   private readonly listeners = new Set<(event: EngineEvent) => void>();
 
   constructor(options: ModelEngineOptions) {
     this.clock = options.clock;
     this.seed = options.seed >>> 0;
+    this.gatewayOf = options.gatewayOf ?? cassetteForStack;
   }
 
   // ---- Ouverture et lecture ----
@@ -84,11 +78,16 @@ class ModelEngine implements CardwakeEngine {
   openStack(stack: Stack): void {
     this.stack = stack;
     this.journalInstance = new Journal();
-    this.session = new SessionBudgetTracker(stack.settings);
-    this.action = new ActionBudgetTracker(stack.settings);
+    // Les compteurs sont bâtis sur les réglages **recadrés** : c'est eux que
+    // le `Dispatcher` et le pont enregistré utilisent, donc les deux jauges
+    // ne peuvent pas diverger (CAR-P-13).
+    const settings = clampSettings(stack.settings);
+    this.session = new SessionBudgetTracker(settings);
+    this.action = new ActionBudgetTracker(settings);
     this.refusal = null;
     this.notice = null;
     this.redoable = false;
+    this.lastSpy = null;
     this.emit({ type: "opened", stack });
   }
 
@@ -125,11 +124,12 @@ class ModelEngine implements CardwakeEngine {
   }
 
   click(partId: number): void {
+    const stack = this.stack;
     const card = this.currentCard();
-    if (this.stack === null || card === null) return;
+    if (stack === null || card === null) return;
     // Une action humaine ouvre un nouveau compteur de sauts (7.6).
-    this.action = new ActionBudgetTracker(this.stack.settings);
-    const part = this.findPart(card, partId);
+    this.action = new ActionBudgetTracker(clampSettings(stack.settings));
+    const part = findPart(stack, card, partId);
     this.emit({ type: "clicked", partId });
     if (part === undefined || part.kind !== "button") return;
     if (part.script.trim() === "") return;
@@ -140,18 +140,20 @@ class ModelEngine implements CardwakeEngine {
   /** Barre de discussion : l'humain parle à l'agent de la carte affichée. Hors
    * contrat figé, exposée par `createModelEngine` ; asynchrone, comme `click`. */
   chat(text: string): void {
+    const stack = this.stack;
     const card = this.currentCard();
-    if (this.stack === null || card === null) return;
-    this.action = new ActionBudgetTracker(this.stack.settings);
+    if (stack === null || card === null) return;
+    this.action = new ActionBudgetTracker(clampSettings(stack.settings));
     this.dispatch({ kind: "chat", cardId: card.id, text });
   }
 
   editField(partId: number, text: string): void {
+    const stack = this.stack;
     const card = this.currentCard();
-    if (this.stack === null || card === null) return;
-    const target = this.fieldTarget(card, partId);
+    if (stack === null || card === null) return;
+    const target = fieldTarget(stack, card, partId);
     if (target === null || target.part.kind !== "field") return;
-    const before = currentText(this.stack, card.id, partId);
+    const before = currentText(stack, card.id, partId);
     if (before === text) return;
     const op: Op = {
       kind: "setText",
@@ -161,7 +163,7 @@ class ModelEngine implements CardwakeEngine {
       before,
       after: text,
       // Un humain écrit à l'encre noire : l'encre d'agent tombe (CAR-F-42).
-      inkBefore: currentInk(this.stack, card.id, partId),
+      inkBefore: currentInk(stack, card.id, partId),
       inkAfter: null,
     };
     this.applyAuthorized(`human edit of field "${target.part.name}"`, [op]);
@@ -170,83 +172,53 @@ class ModelEngine implements CardwakeEngine {
   // ---- Construction (mode Fabriquer seulement, CAR-F-02, CAR-F-05) ----
 
   addCard(name: string): void {
-    const pre = this.stack;
-    if (pre === null) return;
-    const built = createCard(pre, { name });
-    const ops: Op[] = [{ kind: "createCard", card: built.card, index: pre.cards.length }];
-    if (pre.currentCardId === null) {
-      ops.push({ kind: "navigate", before: null, after: built.card.id });
-    }
-    this.applyAuthorized(`human creation of card "${name}"`, ops, built.stack.nextId);
+    if (this.stack === null) return;
+    const built = addCardOps(this.stack, name);
+    this.applyAuthorized(`human creation of card "${name}"`, built.ops, built.nextId);
   }
 
   addPart(kind: "button" | "field", name: string): void {
-    const pre = this.stack;
+    const stack = this.stack;
     const card = this.currentCard();
-    if (pre === null || card === null) {
+    if (stack === null || card === null) {
       this.say("Create a card first: the palette adds to the current card.");
       return;
     }
-    const built =
-      kind === "field"
-        ? createField(pre, { name, cardId: card.id })
-        : createButton(pre, { name, cardId: card.id });
-    const op: Op = { kind: "createPart", cardId: card.id, part: built.part, index: card.parts.length };
-    this.applyAuthorized(`human creation of ${kind} "${name}"`, [op], built.stack.nextId);
+    const built = addPartOps(stack, card, kind, name);
+    this.applyAuthorized(`human creation of ${kind} "${name}"`, built.ops, built.nextId);
   }
 
   addBackground(name: string): void {
-    const pre = this.stack;
-    if (pre === null) return;
-    const built = createBackground(pre, name);
-    const op: Op = { kind: "createBackground", background: built.background };
-    this.applyAuthorized(`human creation of background "${name}"`, [op], built.stack.nextId);
+    if (this.stack === null) return;
+    const built = addBackgroundOps(this.stack, name);
+    this.applyAuthorized(`human creation of background "${name}"`, built.ops, built.nextId);
   }
 
   setPartRect(partId: number, rect: Rect): void {
+    const stack = this.stack;
     const card = this.currentCard();
-    if (this.stack === null || card === null) return;
-    const part = this.findPart(card, partId);
+    if (stack === null || card === null) return;
+    const part = findPart(stack, card, partId);
     if (part === undefined) return;
-    const op: Op = {
-      kind: "setProp",
-      target: { kind: "part", cardId: card.id, partId },
-      prop: "rect",
-      before: part.rect.join(","),
-      after: rect.join(","),
-    };
-    this.applyAuthorized(`human resize of "${part.name}"`, [op]);
+    this.applyAuthorized(`human resize of "${part.name}"`, [setPartRectOps(card, part, rect)]);
   }
 
   setPartProp(partId: number, prop: PropName, value: string): void {
+    const stack = this.stack;
     const card = this.currentCard();
-    if (this.stack === null || card === null) return;
-    const part = this.findPart(card, partId);
+    if (stack === null || card === null) return;
+    const part = findPart(stack, card, partId);
     if (part === undefined) return;
-    const op: Op = {
-      kind: "setProp",
-      target: { kind: "part", cardId: card.id, partId },
-      prop,
-      before: readPropText(part, prop),
-      after: value,
-    };
-    this.applyAuthorized(`human edit of "${part.name}" (${prop})`, [op]);
+    this.applyAuthorized(`human edit of "${part.name}" (${prop})`, [setPartPropOps(card, part, prop, value)]);
   }
 
   deletePart(partId: number): void {
+    const stack = this.stack;
     const card = this.currentCard();
-    if (this.stack === null || card === null) return;
-    const part = this.findPart(card, partId);
+    if (stack === null || card === null) return;
+    const part = findPart(stack, card, partId);
     if (part === undefined) return;
-    const onBackground = !card.parts.some((item) => item.id === partId);
-    const op: Op = {
-      kind: "deletePart",
-      cardId: card.id,
-      ...(onBackground && card.background !== null ? { backgroundId: card.background } : {}),
-      part,
-      index: onBackground ? 0 : card.parts.findIndex((item) => item.id === partId),
-    };
-    this.applyAuthorized(`human deletion of "${part.name}"`, [op]);
+    this.applyAuthorized(`human deletion of "${part.name}"`, [deletePartOps(card, part)]);
   }
 
   // ---- Réception (7.10, CAR-F-52) ----
@@ -344,6 +316,11 @@ class ModelEngine implements CardwakeEngine {
     return this.notice;
   }
 
+  /** L'espion de messages : la trace de la dernière action (CAR-F-19). */
+  spy(): SpyView {
+    return this.lastSpy ?? emptySpy();
+  }
+
   // ---- Abonnements ----
 
   subscribe(listener: (event: EngineEvent) => void): () => void {
@@ -411,25 +388,46 @@ class ModelEngine implements CardwakeEngine {
     return this.seed;
   }
 
-  /** Lance l'exécution asynchrone via l'adaptateur : journal, graine et horloge du moteur. */
+  /**
+   * Lance l'exécution asynchrone via l'adaptateur : journal, graine et horloge
+   * du moteur. Le pont enregistré est branché sur le `Dispatcher` : les tours
+   * d'agent passent par la cassette de la pile, jamais par le réseau.
+   */
   private dispatch(request: DispatchRequest): void {
-    if (this.stack === null) return;
+    const stack = this.stack;
+    if (stack === null) return;
+    const bridge = createAgentBridge({
+      gatewayOf: (current) => this.gatewayOf(current),
+      session: () => this.session,
+      action: () => this.action,
+    });
     const adapter = createDispatchAdapter({
-      stack: this.stack,
+      stack,
       journal: this.journalInstance,
       seed: this.nextSeed(),
       clock: this.clock,
+      onAgentTurn: bridge.onAgentTurn,
     });
+    const described = describeRequest(stack, request);
     runDispatch(adapter, request)
-      .then((result) => this.settleDispatch(adapter, result))
+      .then((result) => this.settleDispatch(adapter, described, result, bridge.misses))
       .catch(() => this.say("The script failed and its transaction was rolled back."));
   }
 
   /** Fin d'une exécution : pile resynchronisée, budget, refus ou avis, `changed`. */
-  private settleDispatch(adapter: DispatchAdapter, result: DispatchResult): void {
+  private settleDispatch(
+    adapter: DispatchAdapter,
+    request: SpyRequest,
+    result: DispatchResult,
+    misses: number,
+  ): void {
     this.stack = adapter.current;
     this.redoable = false;
-    this.absorbBudget(result);
+    // L'espion montre les sauts qui restent **vraiment** : `absorbBudget` a
+    // déjà rendu ceux des tours partis sans rien produire, donc la jauge et
+    // la trace ne peuvent pas se contredire.
+    const hopsLeft = this.absorbBudget(result, misses);
+    this.lastSpy = spyView(request, result, hopsLeft);
     const refused = result.refusals.find((verdict) => !verdict.allow);
     if (refused !== undefined && !refused.allow) {
       this.refuse(refused.reason, refused.rule);
@@ -440,15 +438,17 @@ class ModelEngine implements CardwakeEngine {
     this.emit({ type: "changed", stack: this.stack });
   }
 
-  /** Reporte les sauts et tours consommés par l'adaptateur dans les jauges. */
-  private absorbBudget(result: DispatchResult): void {
-    const hopBudget = this.stack?.settings.hopBudget ?? 0;
-    const spentHops = Math.max(0, hopBudget - result.hopsLeft);
+  /**
+   * Reporte les sauts consommés par l'action dans la jauge et rend ce qu'il
+   * en reste. Les tours, eux, sont déjà comptés : le pont les porte un par
+   * appel de modèle, comme l'enregistreur. Un tour sans enregistrement ne
+   * consomme rien : le saut que le `Dispatcher` avait avancé est rendu ici.
+   */
+  private absorbBudget(result: DispatchResult, misses: number): number {
+    const hopBudget = clampSettings(this.stack?.settings).hopBudget;
+    const spentHops = Math.max(0, hopBudget - result.hopsLeft - misses);
     for (let hop = 0; hop < spentHops; hop += 1) this.action?.consumeHop();
-    for (let turn = 0; turn < result.agentTurns; turn += 1) {
-      this.action?.consumeTurn();
-      this.session?.consumeTurn();
-    }
+    return this.action?.snapshot().hopsLeft ?? Math.max(0, hopBudget - spentHops);
   }
 
   private refuse(reason: string, rule: string): void {
@@ -465,26 +465,6 @@ class ModelEngine implements CardwakeEngine {
 
   private emit(event: EngineEvent): void {
     for (const listener of this.listeners) listener(event);
-  }
-
-  /** Élément visé : propre à la carte, ou champ de son fond (CAR-F-03). */
-  private findPart(card: Card, partId: number): Part | undefined {
-    const own = card.parts.find((part) => part.id === partId);
-    if (own !== undefined) return own;
-    if (this.stack === null || card.background === null) return undefined;
-    const background = this.stack.backgrounds.find((item) => item.id === card.background);
-    return background?.parts.find((part) => part.id === partId);
-  }
-
-  /** Cible d'un champ, avec son fond éventuel et son verrou. */
-  private fieldTarget(card: Card, partId: number): FieldTarget | null {
-    const own = card.parts.find((part) => part.id === partId);
-    if (own !== undefined) return { locked: own.kind === "field" && own.locked, part: own };
-    if (this.stack === null || card.background === null) return null;
-    const background = this.stack.backgrounds.find((item) => item.id === card.background);
-    const part = background?.parts.find((item) => item.id === partId);
-    if (part === undefined || background === undefined) return null;
-    return { backgroundId: background.id, locked: part.kind === "field" && part.locked, part };
   }
 }
 

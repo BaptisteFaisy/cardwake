@@ -1,0 +1,100 @@
+{
+  "id": "agents-04",
+  "family": "agents",
+  "phrase": "Summarise asks the agent for a one-sentence summary of field Minutes and puts the agent's answer into field Summary.",
+  "object": "Meeting/Summarise",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": {
+          "awake": true,
+          "level": 2,
+          "persona": "You summarise discussions in one sentence. Every answer you give ends with the exact words: over to you. You write only in field Summary.",
+          "speed": "fast"
+        },
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Meeting",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Minutes",
+            "rect": [
+              16,
+              40,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "We agreed to move the launch to March and to hire one more baker.",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "Summary",
+            "rect": [
+              16,
+              144,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Summarise",
+            "name": "Summarise",
+            "rect": [
+              16,
+              248,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval agents-04",
+    "nextId": 50,
+    "persona": "The persona pins the ending, so the check stays about behaviour.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "click": "Summarise"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "agentSaid",
+      "card": "Meeting",
+      "contains": "over to you"
+    }
+  ]
+}

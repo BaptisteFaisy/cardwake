@@ -1,0 +1,110 @@
+{
+  "id": "conditions-05",
+  "family": "conditions",
+  "phrase": "Enter only lets the visitor through when field Email holds something; otherwise it writes Missing email into field Status and stays put.",
+  "object": "Login/Enter",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Login",
+        "parts": [
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Email",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "id": 4,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "Status",
+            "rect": [
+              16,
+              72,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 5,
+            "kind": "button",
+            "label": "Enter",
+            "name": "Enter",
+            "rect": [
+              16,
+              104,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      },
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 2,
+        "ink": {},
+        "name": "Inside",
+        "parts": [],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval conditions-05",
+    "nextId": 50,
+    "persona": "A door that opens only with a typed email.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "type": {
+        "field": "Email",
+        "text": "marie@example.fr"
+      }
+    },
+    {
+      "click": "Enter"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "cardIs",
+      "name": "Inside"
+    }
+  ]
+}

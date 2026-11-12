@@ -1,0 +1,107 @@
+{
+  "id": "conditions-02",
+  "family": "conditions",
+  "phrase": "Add appends the line typed in field New to field List, then clears field New; it must do nothing at all when field New is empty.",
+  "object": "Tasks/Add",
+  "stack": {
+    "backgrounds": [],
+    "cards": [
+      {
+        "agent": null,
+        "background": null,
+        "content": {},
+        "id": 1,
+        "ink": {},
+        "name": "Tasks",
+        "parts": [
+          {
+            "id": 2,
+            "kind": "field",
+            "locked": false,
+            "multiline": false,
+            "name": "New",
+            "rect": [
+              16,
+              40,
+              240,
+              24
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "",
+            "visible": true
+          },
+          {
+            "id": 3,
+            "kind": "field",
+            "locked": false,
+            "multiline": true,
+            "name": "List",
+            "rect": [
+              16,
+              72,
+              240,
+              96
+            ],
+            "script": "",
+            "style": "plain",
+            "text": "water the plants",
+            "visible": true
+          },
+          {
+            "enabled": true,
+            "hilite": false,
+            "id": 4,
+            "kind": "button",
+            "label": "Add",
+            "name": "Add",
+            "rect": [
+              16,
+              176,
+              160,
+              28
+            ],
+            "script": "",
+            "style": "plain",
+            "visible": true
+          }
+        ],
+        "script": ""
+      }
+    ],
+    "currentCardId": 1,
+    "format": "cardwake/1",
+    "name": "Eval conditions-02",
+    "nextId": 50,
+    "persona": "Clicked with a typed line: it lands at the end of the list.",
+    "provenance": {
+      "kind": "created"
+    },
+    "script": "",
+    "settings": {}
+  },
+  "events": [
+    {
+      "type": {
+        "field": "New",
+        "text": "repot the fern"
+      }
+    },
+    {
+      "click": "Add"
+    }
+  ],
+  "expect": [
+    {
+      "kind": "fieldContains",
+      "card": "Tasks",
+      "field": "List",
+      "text": "repot the fern"
+    },
+    {
+      "kind": "fieldEmpty",
+      "card": "Tasks",
+      "field": "New"
+    }
+  ]
+}

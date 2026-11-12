@@ -6,8 +6,8 @@
  * `CardFrame`, exporté d'ici, est le rendu partagé de la carte : le mode
  * Fabriquer le réutilise au lieu d'en écrire un second (zéro duplication).
  *
- * Les tours d'agent ne sont pas encore branchés : la barre de discussion le
- * dit honnêtement au lieu de faire semblant.
+ * Les tours d'agent passent par le pont enregistré : la barre écrit à l'agent
+ * de la carte, la cassette répond, et l'avis du site affiche sa réponse.
  */
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
@@ -105,13 +105,31 @@ export function CardPlay(): JSX.Element {
       />
       {parts.length === 0 ? <p className="state-note">{t("state.cardWithoutParts")}</p> : null}
       {card.agent !== null ? (
-        <ChatBar awake={card.agent.awake} onSend={() => setChatNote(t("play.chatNotWired"))} />
+        <ChatBar awake={card.agent.awake} onSend={(text) => sendChat(engine, text, setChatNote)} />
       ) : (
         <p>{t("play.noAgent")}</p>
       )}
       <CardStates budget={budget} chatNote={chatNote} />
     </section>
   );
+}
+
+/**
+ * Envoie un mot à l'agent de la carte affichée (CAR-F-41). Le moteur réel le
+ * fait ; un moteur qui ne le sait pas le dit honnêtement, plutôt que de
+ * faire semblant. La réponse de l'agent s'affiche dans l'avis du site.
+ */
+function sendChat(
+  engine: CardwakeEngine,
+  text: string,
+  setChatNote: (note: string | null) => void,
+): void {
+  if (engine.chat === undefined) {
+    setChatNote(t("play.chatNotWired"));
+    return;
+  }
+  engine.chat(text);
+  setChatNote(null);
 }
 
 /** Navigation entre les cartes : boutons, compteur et liste des cartes. */

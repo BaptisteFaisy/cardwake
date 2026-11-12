@@ -10,14 +10,23 @@
  *   injectée du moteur** (jamais `Date.now()`) : une même graine rejoue la
  *   même exécution (CAR-F-17).
  *
- * Aucun `onAgentTurn` n'est fourni : sans enregistrement, un agent ne répond
- * pas et ne consomme aucun saut ni tour — c'est le comportement attendu du
- * `Dispatcher` tant qu'aucune passerelle réelle n'est branchée.
+ * Un `onAgentTurn` peut être fourni : c'est alors le pont enregistré
+ * (`agent-bridge`) qui répond à la place du silence. Sans lui, un agent ne
+ * répond pas et ne consomme aucun saut ni tour — c'est le comportement
+ * attendu du `Dispatcher` tant qu'aucune passerelle réelle n'est branchée.
  */
 
 import type { Determinism, Guards } from "@cardwake/lang";
 import { APP_LIMITS, Dispatcher, clampSettings } from "@cardwake/model";
-import type { DispatchResult, Journal, Message, Stack, StackSettings } from "@cardwake/model";
+import type {
+  AgentTurnRequest,
+  DispatchResult,
+  Journal,
+  Message,
+  ModelHost,
+  Stack,
+  StackSettings,
+} from "@cardwake/model";
 
 /** Action humaine à exécuter : clic sur un élément, discussion ou message brut. */
 export type DispatchRequest =
@@ -41,6 +50,11 @@ export type DispatchAdapterOptions = {
   clock: () => string;
   /** Réglages de la pile, recadrés sous `APP_LIMITS` à la construction. */
   settings?: Partial<StackSettings>;
+  /**
+   * Le tour d'agent, quand une passerelle est branchée : le pont enregistré
+   * (`agent-bridge`) répond alors à la place du silence du `Dispatcher`.
+   */
+  onAgentTurn?: (request: AgentTurnRequest, host: ModelHost) => string | Promise<string>;
 };
 
 export type DispatchAdapter = {
@@ -112,6 +126,7 @@ export function createDispatchAdapter(options: DispatchAdapterOptions): Dispatch
     determinism: { seed, random: prng(seed), now: nowOf(options.clock) },
     settings,
     clock: options.clock,
+    onAgentTurn: options.onAgentTurn,
   });
   return {
     click: (cardId, partId) => dispatcher.click(cardId, partId),
