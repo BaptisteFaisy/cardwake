@@ -65,6 +65,20 @@ export async function main(argv: readonly string[], io: CliIO = defaultIo): Prom
   if (args.command === "validate") return (await import("./commands/validate")).validateCommand(args, io);
   if (args.command === "paraphrase") return (await import("./commands/paraphrase")).paraphraseCommand(args, io);
   if (args.command === "cassette") return (await import("./commands/cassette")).cassetteCommand(args, io);
+  if (args.command === "live") {
+    const { liveCommand } = await import("./commands/live");
+    const { LOCAL_RELAY_BASE_URL } = await import("@cardwake/agent");
+    const stackPath = args.positionals[0];
+    if (stackPath === undefined || !args.card || !args.say) {
+      io.err("cardwake live needs <stack> --card <Name> --say <text>");
+      return 3;
+    }
+    const result = await liveCommand(
+      { stackPath, card: args.card, say: args.say, relayBaseUrl: args.relay ?? LOCAL_RELAY_BASE_URL },
+      io,
+    );
+    return result.code;
+  }
   return (await import("./commands/run")).runCommand(args, io);
 }
 
