@@ -20,8 +20,8 @@ import { createLocalRelayGateway, writeScript } from "@cardwake/agent";
 import type { LlmGateway } from "@cardwake/agent";
 import { applyOps, authorizeOp, byName, findCard, findPart, validateStack } from "@cardwake/model";
 import type { Op, Part, Stack } from "@cardwake/model";
-import { createModelEngine, settled } from "../apps/web/src/engine/model-engine";
-import type { ModelEngineApi } from "../apps/web/src/engine/model-engine";
+import { playEvents } from "./play";
+import type { Played } from "./play";
 import { checkTask } from "./check";
 import type { EvalTask } from "./schema";
 
@@ -49,6 +49,12 @@ export type TaskOutcome = {
   calls: number;
   inputTokens: number;
   outputTokens: number;
+  /** La tâche a-t-elle réussi **du premier coup** (sans réparation) ? */
+  firstTry: boolean;
+  /** Une réparation a-t-elle été demandée au modèle ? */
+  repaired: boolean;
+  /** Les tentatives de rédaction (1 = premier coup seulement). */
+  attempts: number;
 };
 
 /** Le rapport d'un passage complet. */
@@ -56,8 +62,13 @@ export type GameReport = {
   startedAt: string;
   model: string;
   total: number;
+  /** Les tâches réussies, après au plus une réparation. */
   ok: number;
-  byFamily: Record<string, { total: number; ok: number }>;
+  /** Les tâches réussies **du premier coup**, sans réparation. */
+  okFirstTry: number;
+  /** Les tâches qui ont demandé une réparation. */
+  repaired: number;
+  byFamily: Record<string, { total: number; ok: number; firstTry: number }>;
   tasks: TaskOutcome[];
   calls: number;
   inputTokens: number;
@@ -196,89 +207,6 @@ export function installScript(stack: Stack, target: Target, script: string): Sta
 }
 
 // --------------------------------------------------------------------------
-// La partie : jouer les événements sur le vrai moteur
-// --------------------------------------------------------------------------
-
-/** Ce qu'une partie laisse : la pile finale, et les erreurs rencontrées. */
-export type Played = { stack: Stack; errors: string[] };
-
-/** Attend la fin d'une action du moteur, sans jamais attendre plus de 30 s. */
-async function waitFor(engine: ModelEngineApi, action: () => void): Promise<void> {
-  const done = settled(engine);
-  action();
-  await Promise.race([done, new Promise((resolve) => setTimeout(resolve, 30_000))]);
-}
-
-/**
- * L'élément d'une carte, par nom et par nature. La nature compte : une pile
- * de démonstration porte souvent un champ et un bouton du même nom
- * (« Average », « Total ») ; cliquer le champ ne déclenche pas le script du
- * bouton, et le jeu mesurerait alors le silence au lieu du modèle.
- */
-function partNamed(card: { parts: Part[] }, name: string, kind?: "button" | "field"): Part | undefined {
-  const matches = card.parts.filter((part) => part.name.toLowerCase() === name.toLowerCase());
-  if (kind === undefined) return matches[0];
-  return matches.find((part) => part.kind === kind);
-}
-
-/** Les erreurs d'exécution que le moteur a rencontrées pendant une action. */
-function errorsOf(engine: ModelEngineApi): string[] {
-  return engine.spy().trace.filter((line) => line.includes("failed on"));
-}
-
-/** Joue un événement : un clic, une saisie, ou une phrase à l'agent. */
-async function playEvent(engine: ModelEngineApi, event: EvalTask["events"][number]): Promise<string | null> {
-  const card = engine.currentCard();
-  if (!card) return "no card is shown";
-  if (event.click !== undefined) {
-    const part = partNamed(card, event.click, "button") ?? partNamed(card, event.click);
-    if (!part) return `no element named "${event.click}" on card "${card.name}"`;
-    if (part.kind !== "button") return `"${event.click}" is a ${part.kind}, not a button`;
-    // Un bouton sans script ne produit aucun changement : le moteur ne dit
-    // rien, et attendre serait mentir sur ce que le jeu mesure.
-    if (part.script.trim() === "") return `the button "${part.name}" carries no script`;
-    await waitFor(engine, () => engine.click(part.id));
-    return null;
-  }
-  if (event.type !== undefined) {
-    const part = partNamed(card, event.type.field, "field");
-    if (!part) return `no field named "${event.type.field}" on card "${card.name}"`;
-    engine.editField(part.id, event.type.text);
-    return null;
-  }
-  if (event.chat !== undefined) {
-    await waitFor(engine, () => engine.chat(event.chat as string));
-    return null;
-  }
-  return "the event says nothing to do";
-}
-
-/** Joue tous les événements d'une tâche, dans l'ordre. */
-export async function playEvents(
-  stack: Stack,
-  events: EvalTask["events"],
-  options: RunnerOptions,
-): Promise<Played> {
-  const engine = createModelEngine({
-    clock: options.clock,
-    seed: options.seed,
-    gatewayOf: () => options.gateway,
-    relayExpected: () => options.gateway.mode === "relay",
-  });
-  engine.openStack(stack);
-  const errors: string[] = [];
-  for (const event of events) {
-    const failure = await playEvent(engine, event);
-    if (failure !== null) {
-      errors.push(failure);
-      break;
-    }
-    errors.push(...errorsOf(engine));
-  }
-  return { stack: engine.state() ?? stack, errors };
-}
-
-// --------------------------------------------------------------------------
 // Une tâche
 // --------------------------------------------------------------------------
 
@@ -295,59 +223,173 @@ function failed(task: EvalTask, reason: string, extra?: Partial<TaskOutcome>): T
     calls: 0,
     inputTokens: 0,
     outputTokens: 0,
+    firstTry: false,
+    repaired: false,
+    attempts: 0,
     ...extra,
   };
 }
 
-/** Joue une tâche : le script, l'installation, la partie, le verdict. */
-export async function runTask(task: EvalTask, options: RunnerOptions): Promise<TaskOutcome> {
-  const counted = countGateway(options.gateway);
-  const local: RunnerOptions = { ...options, gateway: counted.gateway };
-  const validated = validateStack(task.stack);
-  if (!validated.ok) return failed(task, `the stack of the task is invalid: ${validated.errors.join("; ")}`);
-  const target = targetOf(validated.stack, task.object);
-  if (typeof target === "string") return failed(task, target);
+/** Ce que le modèle a rendu : un script, ou la raison de son absence. */
+type Draft = { script: string; paraphrase: string[] } | { reason: string; paraphrase: string[] };
+
+/** Demande le script au modèle : contrôlé, relu et essayé à blanc par lui. */
+async function draftFor(
+  task: EvalTask,
+  stack: Stack,
+  target: Target,
+  counted: LlmGateway,
+  options: RunnerOptions,
+  phrase: string,
+): Promise<Draft> {
   const draft = await writeScript(
     {
-      phrase: task.phrase,
+      phrase,
       objectKind: "part",
       objectName: target.name,
-      stackSummary: stackSummaryOf(validated.stack, task.object),
-      currentScript: scriptOf(validated.stack, target),
+      stackSummary: stackSummaryOf(stack, task.object),
+      currentScript: scriptOf(stack, target),
     },
-    counted.gateway,
+    counted,
     {
       languageReference: options.languageReference,
-      stack: validated.stack,
+      stack,
       cardId: target.cardId,
+      // La référence du langage est longue : une sortie plafonnée à 2 000
+      // jetons était coupée en pleine réponse structurée, que le modèle
+      // devait alors réparer (deux appels au lieu d'un). Quatre mille jetons
+      // laissent un script entier passer au premier coup.
+      maxOutputTokens: 4_000,
     },
   );
-  if (draft.status !== "draft" || draft.script === undefined || draft.script.trim() === "") {
-    const reason =
-      draft.questions.length > 0
-        ? `the model asked questions instead of writing: ${draft.questions.join(" ")}`
-        : `the model wrote no usable script: ${draft.issues.map((issue) => issue.message).join("; ")}`;
-    return failed(task, reason, { paraphrase: draft.paraphrase });
+  if (draft.status === "draft" && draft.script !== undefined && draft.script.trim() !== "") {
+    return { script: draft.script, paraphrase: draft.paraphrase };
   }
-  const stack = installScript(validated.stack, target, draft.script);
-  const played = await playEvents(stack, task.events, local);
-  const check = checkTask(task, played.stack);
-  const failures = [...check.failures];
+  const reason =
+    draft.questions.length > 0
+      ? `the model asked questions instead of writing: ${draft.questions.join(" ")}`
+      : `the model wrote no usable script: ${draft.issues.map((issue) => issue.message).join("; ")}`;
+  return { reason, paraphrase: draft.paraphrase };
+}
+
+/** Les échecs du verdict : les attentes, plus les erreurs si la tâche en exige l'absence. */
+function failuresOf(task: EvalTask, played: Played): string[] {
+  const failures = [...checkTask(task, played.stack).failures];
   if (played.errors.length > 0 && task.expect.some((expect) => expect.kind === "noError")) {
     failures.push(`the script failed: ${played.errors.join("; ")}`);
+  }
+  return failures;
+}
+
+/**
+ * Un essai : le script demandé, installé, joué, puis judged. Soit le script et
+ * ce que la pile a montré, soit la raison pour laquelle il n'y a pas de script.
+ */
+type Attempt =
+  | { script: string; paraphrase: string[]; failures: string[]; errors: string[] }
+  | { reason: string; paraphrase: string[] };
+
+/** Un essai complet : un brouillon, une installation, une partie. */
+async function attemptTask(
+  task: EvalTask,
+  stack: Stack,
+  target: Target,
+  gateway: LlmGateway,
+  options: RunnerOptions,
+  phrase: string,
+): Promise<Attempt> {
+  const draft = await draftFor(task, stack, target, gateway, options, phrase);
+  if ("reason" in draft) return { reason: draft.reason, paraphrase: draft.paraphrase };
+  const played = await playEvents(installScript(stack, target, draft.script), task.events, {
+    ...options,
+    gateway,
+  });
+  return {
+    script: draft.script,
+    paraphrase: draft.paraphrase,
+    failures: failuresOf(task, played),
+    errors: played.errors,
+  };
+}
+
+/**
+ * La demande de réparation : la phrase d'origine, et ce que la pile a
+ * réellement montré. Un seul appel supplémentaire, comme le cahier le
+ * prévoit — et le modèle voit le résultat, pas seulement l'échec.
+ */
+export function repairPhrase(task: EvalTask, failures: string[]): string {
+  return [
+    task.phrase,
+    "",
+    "The script you proposed was installed and played on the stack. Here is what the stack actually showed:",
+    ...failures.map((failure) => `- ${failure}`),
+    "",
+    "Write the corrected script for the same request.",
+  ].join("\n");
+}
+
+/** Le compte rendu d'une tâche : le verdict et ce qui a été dépensé. */
+function outcomeOf(
+  task: EvalTask,
+  attempt: Attempt,
+  counted: CountedGateway,
+  firstTry: boolean,
+  repaired: boolean,
+  attempts: number,
+): TaskOutcome {
+  if ("reason" in attempt) {
+    return failed(task, attempt.reason, {
+      paraphrase: attempt.paraphrase,
+      calls: counted.usage.calls,
+      inputTokens: counted.usage.inputTokens,
+      outputTokens: counted.usage.outputTokens,
+      attempts,
+    });
   }
   return {
     id: task.id,
     family: task.family,
-    status: failures.length === 0 ? "ok" : "failed",
-    script: draft.script,
-    paraphrase: draft.paraphrase,
-    failures,
-    errors: played.errors,
+    status: attempt.failures.length === 0 ? "ok" : "failed",
+    script: attempt.script,
+    paraphrase: attempt.paraphrase,
+    failures: attempt.failures,
+    errors: attempt.errors,
     calls: counted.usage.calls,
     inputTokens: counted.usage.inputTokens,
     outputTokens: counted.usage.outputTokens,
+    firstTry,
+    repaired,
+    attempts,
   };
+}
+
+/**
+ * Joue une tâche : le script, l'installation, la partie, le verdict — puis,
+ * si le script n'a pas fait ce qu'on attendait, **une** réparation demandée
+ * au modèle avec ce que la pile a montré (le cahier : « ≥ 95 % après une
+ * réparation, un seul appel supplémentaire »).
+ */
+export async function runTask(task: EvalTask, options: RunnerOptions): Promise<TaskOutcome> {
+  const counted = countGateway(options.gateway);
+  const validated = validateStack(task.stack);
+  if (!validated.ok) return failed(task, `the stack of the task is invalid: ${validated.errors.join("; ")}`);
+  const target = targetOf(validated.stack, task.object);
+  if (typeof target === "string") return failed(task, target);
+  const first = await attemptTask(task, validated.stack, target, counted.gateway, options, task.phrase);
+  if ("reason" in first) return outcomeOf(task, first, counted, false, false, 1);
+  if (first.failures.length === 0) return outcomeOf(task, first, counted, true, false, 1);
+  const repair = await attemptTask(
+    task,
+    validated.stack,
+    target,
+    counted.gateway,
+    options,
+    repairPhrase(task, first.failures),
+  );
+  if ("reason" in repair) {
+    return outcomeOf(task, { ...first, errors: [...first.errors, repair.reason] }, counted, false, true, 2);
+  }
+  return outcomeOf(task, repair, counted, false, true, 2);
 }
 
 // --------------------------------------------------------------------------
@@ -367,9 +409,10 @@ export async function runGame(tasks: EvalTask[], options: RunnerOptions): Promis
     calls += outcome.calls;
     inputTokens += outcome.inputTokens;
     outputTokens += outcome.outputTokens;
-    const family = byFamily[task.family] ?? { total: 0, ok: 0 };
+    const family = byFamily[task.family] ?? { total: 0, ok: 0, firstTry: 0 };
     family.total += 1;
     if (outcome.status === "ok") family.ok += 1;
+    if (outcome.firstTry) family.firstTry += 1;
     byFamily[task.family] = family;
     options.onTask?.(outcome);
   }
@@ -378,6 +421,8 @@ export async function runGame(tasks: EvalTask[], options: RunnerOptions): Promis
     model: options.model ?? "unknown",
     total: outcomes.length,
     ok: outcomes.filter((outcome) => outcome.status === "ok").length,
+    okFirstTry: outcomes.filter((outcome) => outcome.firstTry).length,
+    repaired: outcomes.filter((outcome) => outcome.repaired).length,
     byFamily,
     tasks: outcomes,
     calls,
