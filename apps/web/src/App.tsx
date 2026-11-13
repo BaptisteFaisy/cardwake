@@ -73,7 +73,7 @@ function Shell({ storage, start }: ShellProps): JSX.Element {
       <main className="screen">
         <StackBar
           stack={stack}
-          resumed={start.kind === "restored"}
+          resumed={session.resumed}
           status={session.status}
           storage={storage}
           onExport={session.exportCurrent}

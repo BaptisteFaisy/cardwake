@@ -31,6 +31,8 @@ export type RefusedView = { fault: PersistFault; text: string };
 export type StackSession = {
   screen: Screen;
   go: (screen: Screen) => void;
+  /** La pile affichée est-elle celle reprise au démarrage ? */
+  resumed: boolean;
   refused: RefusedView | null;
   dismissRefusal: () => void;
   status: AutosaveStatus;
@@ -67,6 +69,39 @@ function downloader(refused: RefusedView | null): (() => void) | null {
   return (): void => void exportText(refused.text, "refused-stack.json");
 }
 
+/** L'état de la dernière écriture automatique, branché sur le moteur. */
+function useAutosave(engine: CardwakeEngine, storage: StorageLike | null): AutosaveStatus {
+  const [status, setStatus] = useState<AutosaveStatus>({ kind: "saved" });
+  useEffect(() => {
+    const autosave = attachAutosave(engine, { storage, onStatus: setStatus });
+    return autosave.detach;
+  }, [engine, storage]);
+  return status;
+}
+
+/** Ce qu'un import a le droit de changer dans la séance. */
+type ImportTarget = {
+  engine: CardwakeEngine;
+  storage: StorageLike | null;
+  show: (stack: Stack, mode: "play" | "build") => void;
+  refuse: (view: RefusedView) => void;
+};
+
+/**
+ * Le geste d'import : validation en bloc, refus entier avec sa raison, et le
+ * fichier refusé gardé tel quel pour ne rien perdre.
+ */
+function importer(target: ImportTarget, file: File): void {
+  void readStackFile(file).then((result) => {
+    if (result.ok) {
+      target.show(result.stack, "play");
+      return;
+    }
+    keepRefusedStack(target.storage, result.text);
+    target.refuse({ fault: { reason: result.reason, rule: "file-invalid" }, text: result.text });
+  });
+}
+
 /**
  * La séance : l'état de l'écran, la pile, l'enregistrement automatique.
  * Le stockage passe par `storage` ; `null` veut dire que ce navigateur n'en
@@ -79,50 +114,33 @@ export function useStackSession(options: {
 }): StackSession {
   const { engine, storage, start } = options;
   const [screen, setScreen] = useState<Screen>(() => screenFor(engine));
+  // La mention « reprise au démarrage » ne vaut que pour la pile du
+  // démarrage : dès qu'on en ouvre une autre, elle ne dit plus rien de vrai.
+  const [resumed, setResumed] = useState(start.kind === "restored");
   const [refused, setRefused] = useState<RefusedView | null>(() => refusalFor(start, storage));
-  const [status, setStatus] = useState<AutosaveStatus>({ kind: "saved" });
-
-  useEffect(() => {
-    const autosave = attachAutosave(engine, { storage, onStatus: setStatus });
-    return autosave.detach;
-  }, [engine, storage]);
+  const status = useAutosave(engine, storage);
 
   const show = (next: Stack, mode: "play" | "build"): void => {
     openStack(engine, next, mode);
+    setResumed(false);
     setRefused(null);
     setScreen(screenFor(engine));
-  };
-
-  const openNew = (): void => show(createStack(t("shelf.newStackName")), "build");
-
-  /** Un fichier de pile : validation en bloc, refus entier avec la raison. */
-  const openFile = (file: File): void => {
-    void readStackFile(file).then((result) => {
-      if (result.ok) {
-        show(result.stack, "play");
-        return;
-      }
-      keepRefusedStack(storage, result.text);
-      setRefused({ fault: { reason: result.reason, rule: "file-invalid" }, text: result.text });
-      setScreen("shelf");
-    });
-  };
-
-  const exportCurrent = (): void => {
-    const current = engine.state();
-    if (current !== null) exportStack(current);
   };
 
   return {
     screen,
     go: setScreen,
+    resumed,
     refused,
     dismissRefusal: () => setRefused(null),
     status,
-    openNew,
+    openNew: () => show(createStack(t("shelf.newStackName")), "build"),
     openDemo: (next: Stack) => show(next, "play"),
-    openFile,
-    exportCurrent,
+    openFile: (file: File) => importer({ engine, storage, show, refuse: setRefused }, file),
+    exportCurrent: () => {
+      const current = engine.state();
+      if (current !== null) exportStack(current);
+    },
     downloadRefused: downloader(refused),
   };
 }
