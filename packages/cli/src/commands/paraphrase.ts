@@ -38,11 +38,12 @@ export function resolveObject(stack: Stack, object: string): Target | string {
   return `no card or background named "${first}"`;
 }
 
-type ParaphraseFn = (script: Script) => unknown;
+type ParaphraseFn = (source: string) => unknown;
 
 /**
- * Le module de relecture, s'il est déjà livré : une seule ligne à garder quand
- * le lot parallèle exporte `paraphraseScript` de `@cardwake/lang`.
+ * Le module de relecture s'il est livré. `paraphraseScript` prend la SOURCE du
+ * script, pas l'arbre syntaxique : le passer à l'AST le faisait échouer et la
+ * CLI tombait sur le repli alors que la relecture existait.
  */
 function paraphraseModule(): ParaphraseFn | null {
   const candidate = (lang as unknown as Record<string, unknown>).paraphraseScript;
@@ -59,18 +60,21 @@ function toLines(result: unknown): string[] | null {
   return null;
 }
 
-/** Relecture en clair, ou texte normalisé en repli (avec avertissement). */
-export function plainLines(script: Script, io: CliIO): string[] {
+/**
+ * Relecture en clair d'un script, à partir de sa source. Repli sur le texte
+ * normalisé si le module de relecture ne rend rien d'exploitable.
+ */
+export function plainLines(source: string, script: Script, io: CliIO): string[] {
   const paraphrase = paraphraseModule();
   if (paraphrase) {
     try {
-      const lines = toLines(paraphrase(script));
+      const lines = toLines(paraphrase(source));
       if (lines) return lines;
     } catch {
       /* repli : le module existe mais ne rend rien d'exploitable */
     }
   }
-  io.out("-- paraphrase module not available yet, printed the normalized script --");
+  io.out("-- paraphrase unavailable, printed the normalized script --");
   return lang.printScript(script).split("\n");
 }
 
@@ -101,6 +105,6 @@ export function paraphraseCommand(args: CliArgs, io: CliIO): number {
     return 1;
   }
   io.out(`-- ${target.label} --`);
-  for (const line of plainLines(parsed.script, io)) io.out(line);
+  for (const line of plainLines(target.script, parsed.script, io)) io.out(line);
   return 0;
 }
