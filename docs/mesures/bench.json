@@ -1,0 +1,112 @@
+{
+  "projet": "Cardwake",
+  "cahier": [
+    "CAR-N-04",
+    "CAR-N-05"
+  ],
+  "date": "2026-11-13T13:16:47.901Z",
+  "graine": 20261113,
+  "commande": "npx vite-node scripts/bench/bench.ts",
+  "machine": {
+    "hote": "baptiste-MS-7D18",
+    "systeme": "linux 7.0.0-43-generic x64",
+    "processeur": "11th Gen Intel(R) Core(TM) i5-11600K @ 3.90GHz",
+    "coeurs": 12,
+    "memoireGo": 31,
+    "node": "v26.9.0",
+    "v8": "14.6.202.34-node.32"
+  },
+  "mesures": [
+    {
+      "id": "changement-carte",
+      "cible": "CAR-N-04",
+      "intitule": "Changement de carte",
+      "unite": "ms",
+      "valeur": 0.005624999999895408,
+      "mediane": 0.005624999999895408,
+      "p95": 0.10649599999987913,
+      "limite": 50,
+      "comparaison": "<",
+      "tours": 200,
+      "verdict": "atteint",
+      "verdictP95": "atteint",
+      "methode": "chemin réel du site — `ModelEngine.navigate` sur une pile de 100 cartes : autorisation, transaction du journal, application de l'opération `navigate`, notification des abonnés ; le rendu React n'est pas compris (banc headless)."
+    },
+    {
+      "id": "ouverture-pile",
+      "cible": "CAR-N-04",
+      "intitule": "Ouverture d'une pile de 100 cartes",
+      "unite": "ms",
+      "valeur": 1.252664999999979,
+      "mediane": 1.252664999999979,
+      "p95": 6.542069999999967,
+      "limite": 1000,
+      "comparaison": "<",
+      "tours": 30,
+      "verdict": "atteint",
+      "verdictP95": "atteint",
+      "methode": "ouverture d'un fichier de pile de 100 cartes : lecture disque, `JSON.parse`, puis `validateStack` (le schéma `cardwake/1`) ; un fichier refusé ne rend jamais une pile partielle."
+    },
+    {
+      "id": "analyse-script",
+      "cible": "CAR-N-04",
+      "intitule": "Analyse d'un script de 200 lignes",
+      "unite": "ms",
+      "valeur": 0.5353405000000748,
+      "mediane": 0.5353405000000748,
+      "p95": 3.11296799999991,
+      "limite": 20,
+      "comparaison": "<",
+      "tours": 300,
+      "verdict": "atteint",
+      "verdictP95": "atteint",
+      "methode": "`parseScript` sur un script de 200 lignes exactement (25 handlers) : lexer et analyseur, jusqu'à l'arbre syntaxique."
+    },
+    {
+      "id": "etapes-interpreteur",
+      "cible": "CAR-N-04",
+      "intitule": "Étapes d'interprétation par seconde",
+      "unite": "étapes/s",
+      "valeur": 1328340.2508471147,
+      "mediane": 1328340.2508471147,
+      "p95": 1695864.331757898,
+      "limite": 200000,
+      "comparaison": "≥",
+      "tours": 12,
+      "verdict": "atteint",
+      "verdictP95": "atteint",
+      "methode": "étapes comptées par l'interpréteur (`result.steps`) sur un script de boucle sans effet sur la pile, divisées par la durée mesurée avec `performance.now()`."
+    },
+    {
+      "id": "evenement-indication",
+      "cible": "CAR-N-05",
+      "intitule": "Délai entre un événement et l'indication visible",
+      "unite": "ms",
+      "valeur": 0.045978999999988446,
+      "mediane": 0.045978999999988446,
+      "p95": 0.12497400000029302,
+      "limite": 100,
+      "comparaison": "<",
+      "tours": 100,
+      "verdict": "atteint",
+      "verdictP95": "atteint",
+      "methode": "clic sur un bouton du vrai moteur jusqu'à l'événement `changed` qui porte l'indication visible (le champ réécrit) : analyse du script, `Dispatcher`, `authorize`, transaction ; le rendu React n'est pas compris (banc headless)."
+    },
+    {
+      "id": "tour-agent",
+      "cible": "CAR-N-05",
+      "intitule": "Tour d'agent médian",
+      "unite": "ms",
+      "valeur": null,
+      "mediane": null,
+      "p95": null,
+      "limite": 4000,
+      "comparaison": "<",
+      "tours": 0,
+      "verdict": "mesuré ailleurs",
+      "verdictP95": null,
+      "methode": "un tour d'agent appelle un vrai modèle : il sort de ce banc, qui n'a ni clé ni réseau",
+      "note": "mesuré avec une vraie clé : voir le rapport d'évaluation (evals/)"
+    }
+  ]
+}
