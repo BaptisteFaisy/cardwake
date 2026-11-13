@@ -103,6 +103,15 @@ describe("runTask", () => {
     expect(outcome.failures.join(" ")).toContain("Subtotal");
   });
 
+  it("clicks the button even when a field carries the same name", async () => {
+    // `calcul-03` porte un champ « Average » ET un bouton « Average » : le
+    // premier trouvé gagnerait, un clic sur le champ ne déclencherait rien,
+    // et le jeu mesurerait le silence au lieu du modèle.
+    const model = modelWith(['on mouseUp', '  put "12" into field "Average"', "end mouseUp"].join("\n"));
+    const outcome = await runTask(taskOf("calcul-03"), optionsFor(model));
+    expect(outcome.status).toBe("ok");
+  });
+
   it("counts the calls it makes to the model", async () => {
     const model = modelWith(GOOD_SCRIPT);
     const outcome = await runTask(taskOf("calcul-01"), optionsFor(model));
