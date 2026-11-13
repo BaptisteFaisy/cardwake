@@ -6,7 +6,7 @@
  * l'état d'avant — tout ou rien (CAR-P-07).
  */
 
-import type { Script } from "../ast";
+import type { Script, Stmt } from "../ast";
 import type { Host, RunResult } from "../host";
 import { runtimeError } from "../errors";
 import { Env, ExitHandler, Halt, ReturnValue } from "./runtime";
@@ -45,9 +45,9 @@ export async function runHandler(
 }
 
 /** Exécute une liste d'instructions (essai à blanc, CLI, tests). */
-export async function runStatements(statements: unknown[], host: Host, env?: Env, script?: Script): Promise<RunResult> {
+export async function runStatements(statements: Stmt[], host: Host, env?: Env, script?: Script): Promise<RunResult> {
   const scope = env ?? newEnv(host, script);
-  return finish(execBody(statements as never, scope), scope);
+  return finish(execBody(statements, scope), scope);
 }
 
 async function finish(run: Promise<void>, env: Env): Promise<RunResult> {
