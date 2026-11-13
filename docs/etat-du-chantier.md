@@ -68,7 +68,7 @@ Les trois premières PR sont passées par la file et ont été mergées sans cli
 | Lot | État | Où |
 |---|---|---|
 | Passe d'accessibilité au lecteur d'écran | à faire — le contrôle automatique existe (axe-core, WCAG 2.2 AA, parcours clavier) et a déjà trouvé un défaut corrigé | `apps/web/test/a11y.test.ts` |
-| Seconde cible du jeu d'évaluation (≥ 95 % après réparation) | non mesurée séparément : la chaîne répare une fois dans la tâche, la tâche est comptée une fois | `evals/runner.ts` |
+| Seconde cible du jeu d'évaluation (≥ 95 % après réparation) | **mesurée** : 88 % et 85 % sur deux passages (la réparation aide, elle ne comble pas l'écart ; les familles `agents` et `loops` sont les plus faibles) | `docs/mesures/eval.md` |
 | Exemple 7.13 : trois transactions et quatre appels au lieu de deux et trois | **écart documenté**, pas un défaut : chaque tour d'agent est sa propre transaction, et l'agent est rappelé après ses appels d'outils. Le comportement observé est celui du cahier (`alarmed`, puis `nervous`, état de départ restauré) | `docs/recette.md` |
 | Vidéo de trois minutes | hors périmètre (exclue par le demandeur) ; le script est livré | `docs/video-script.md` |
 
