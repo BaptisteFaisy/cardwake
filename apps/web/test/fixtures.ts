@@ -12,12 +12,49 @@ import manorRaw from "../../../stacks/manor/stack.json";
 import { createModelEngine } from "../src/engine/model-engine";
 import type { ModelEngineApi } from "../src/engine/model-engine";
 import type { EngineEvent } from "../src/engine/types";
+import type { StorageLike } from "../src/data/storage";
 
 /** La pile du manoir, validée par le schéma comme le fait le site. */
 export function demoStack(): Stack {
   const parsed = parseStackFile(JSON.stringify(manorRaw));
   if (!parsed.ok) throw new Error(`manor stack refused: ${parsed.errors.join(", ")}`);
   return parsed.stack;
+}
+
+/** Un stockage en mémoire : le navigateur tel que la persistance le voit. */
+export type MemoryStorage = StorageLike & { entries: Map<string, string> };
+
+/** Le stockage d'un appareil qui répond : un `Map`, ni plus ni moins. */
+export function memoryStorage(seed: Record<string, string> = {}): MemoryStorage {
+  const entries = new Map<string, string>(Object.entries(seed));
+  return {
+    entries,
+    getItem: (key) => entries.get(key) ?? null,
+    setItem: (key, value) => {
+      entries.set(key, value);
+    },
+    removeItem: (key) => {
+      entries.delete(key);
+    },
+  };
+}
+
+/** L'erreur d'un navigateur en navigation privée : elle porte son nom. */
+export function namedError(name: string): Error {
+  const error = new Error(name);
+  error.name = name;
+  return error;
+}
+
+/**
+ * Un stockage qui refuse tout : navigation privée, quota atteint, cookies
+ * bloqués. C'est ce que le site doit dire, pas ce devant quoi il tombe.
+ */
+export function refusingStorage(name = "QuotaExceededError"): StorageLike {
+  const refuse = (): never => {
+    throw namedError(name);
+  };
+  return { getItem: refuse, setItem: refuse, removeItem: refuse };
 }
 
 /** Horloge contrôlée : chaque appel avance d'une seconde fictive. */
