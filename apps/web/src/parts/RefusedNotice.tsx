@@ -26,8 +26,9 @@ export function RefusedNotice(props: RefusedNoticeProps): JSX.Element {
   return (
     <section className="state-note refusal" role="alert">
       <p>
-        <strong>{t("persist.refused")}</strong> {fault.reason}
+        <strong>{t("persist.refused")}</strong>
       </p>
+      <p className="stack-bar__problem">{fault.reason}</p>
       <p>{t("persist.refusedKept")}</p>
       <div className="shelf-actions">
         <button type="button" onClick={onStartEmpty}>
