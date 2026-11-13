@@ -20,7 +20,7 @@
 import { ActionBudgetTracker, SessionBudgetTracker } from "@cardwake/agent";
 import type { LlmGateway } from "@cardwake/agent";
 import type { Actor, PropName } from "@cardwake/lang";
-import { Journal, applyOps, authorizeOp, clampSettings, currentInk, currentText } from "@cardwake/model";
+import { Journal, applyOps, authorizeOp, clampSettings } from "@cardwake/model";
 import type { Card, DispatchResult, Op, Rect, Stack, Verdict } from "@cardwake/model";
 import type { BudgetView, CardwakeEngine, EngineEvent, JournalView, Mode, Refusal, SpyView } from "./types";
 import { createDispatchAdapter, noticeOf, runDispatch, stepSeed } from "./dispatch-adapter";
@@ -34,8 +34,9 @@ import {
   addCardOps,
   addPartOps,
   deletePartOps,
-  fieldTarget,
+  fieldEditOps,
   findPart,
+  scriptInstallOps,
   setPartPropOps,
   setPartRectOps,
 } from "./ops";
@@ -162,22 +163,21 @@ class ModelEngine implements CardwakeEngine {
     const stack = this.stack;
     const card = this.currentCard();
     if (stack === null || card === null) return;
-    const target = fieldTarget(stack, card, partId);
-    if (target === null || target.part.kind !== "field") return;
-    const before = currentText(stack, card.id, partId);
-    if (before === text) return;
-    const op: Op = {
-      kind: "setText",
-      cardId: card.id,
-      partId,
-      ...(target.backgroundId !== undefined ? { backgroundId: target.backgroundId } : {}),
-      before,
-      after: text,
-      // Un humain écrit à l'encre noire : l'encre d'agent tombe (CAR-F-42).
-      inkBefore: currentInk(stack, card.id, partId),
-      inkAfter: null,
-    };
-    this.applyAuthorized(`human edit of field "${target.part.name}"`, [op]);
+    const edit = fieldEditOps(stack, card, partId, text);
+    if (edit !== null) this.applyAuthorized(edit.cause, [edit.op]);
+  }
+
+  /**
+   * Installe le script d'un élément (7.7) : l'acceptation d'un brouillon ne
+   * fait que passer par ici. Le mode décide : en Jouer, `authorizeOp` refuse
+   * la structure et le script (CAR-F-05, règle `mode-browse`).
+   */
+  setScript(partId: number, script: string): void {
+    const stack = this.stack;
+    const card = this.currentCard();
+    if (stack === null || card === null) return;
+    const install = scriptInstallOps(stack, card, partId, script);
+    if (install !== null) this.applyAuthorized(install.cause, [install.op]);
   }
 
   // ---- Construction (mode Fabriquer seulement, CAR-F-02, CAR-F-05) ----
