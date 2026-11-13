@@ -14,4 +14,5 @@ export * from "./paraphrase";
 export * from "./check";
 export * from "./values";
 export * from "./chunks";
+export * from "./diff";
 export * from "./interpreter";
