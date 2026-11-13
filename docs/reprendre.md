@@ -11,8 +11,9 @@ les chiffres sont ceux des rapports régénérables.
   rélecture en clair, un essai à blanc, un diff, et rien ne s'installe sans
   Accept.
 - **La suite est verte** : `npm run ci` → 542 tests sur 55 fichiers, 0 échec ;
-  `npm run typecheck` → 0 erreur ; `python3 scripts/guards/run_all.py` → 378
-  fichiers contrôlés, 0 problème.
+  `npm run typecheck` → 0 erreur ; `python3 scripts/guards/run_all.py` → 0
+  problème (le nombre de fichiers contrôlés est celui de l'arbre suivi, il
+  grandit avec le dépôt ; c'est le « 0 problème » qui compte).
 - **Les 23 propriétés du cahier sont citées dans un fichier de test**, et les
   propriétés fast-check tournent à 10 000 tirages sur demande
   (`CARDWAKE_PROP_RUNS=10000 npx vitest run packages`).
@@ -172,7 +173,7 @@ gestionnaire de runners qui tourne — pas à la CI.
 npm ci                                   # reproductible : le verrou contient tous les workspaces
 npm run typecheck                        # 0 erreur attendue
 npm run test:ci                          # 542 tests, 0 échec
-python3 scripts/guards/run_all.py        # 378 fichiers, 0 problème
+python3 scripts/guards/run_all.py        # tous les fichiers suivis, 0 problème
 npx vite-node scripts/recette/recette.ts # les 14 points du cahier
 npx vite-node scripts/bench/bench.ts     # les mesures de performance
 npm run preuves                          # les 29 preuves exécutables
