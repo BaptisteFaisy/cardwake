@@ -120,6 +120,12 @@ export interface CardwakeEngine {
   addBackground(name: string): void;
   setPartRect(partId: number, rect: Rect): void;
   setPartProp(partId: number, prop: PropName, value: string): void;
+  /**
+   * Installe le script d'un élément : une opération `setScript` autorisée et
+   * journalisée, réversible comme les autres (7.7, CAR-F-25). C'est le seul
+   * chemin d'installation d'un brouillon ; en mode Jouer, elle est refusée.
+   */
+  setScript(partId: number, script: string): void;
   deletePart(partId: number): void;
 
   /** Les deux gestes distincts de l'écran de réception (7.10, CAR-F-52). */

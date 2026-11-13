@@ -13,7 +13,7 @@ import {
   createStack,
 } from "@cardwake/model";
 import type { Stack } from "@cardwake/model";
-import { demoStack, makeEngine, settled, textOf } from "./fixtures";
+import { demoStack, makeEngine, scriptOf, settled, textOf } from "./fixtures";
 import type { EngineEvent } from "../src/engine/types";
 
 describe("ouverture et navigation", () => {
@@ -204,6 +204,62 @@ describe("clics et scripts branchés (lot C5b)", () => {
     expect(events.some((event) => event.type === "clicked")).toBe(true);
     expect(engine.journal().entries).toHaveLength(0);
     expect(engine.lastNotice()).toBeNull();
+  });
+});
+
+describe("installation d'un script (7.7, CAR-F-25)", () => {
+  const SCRIPT = 'on mouseUp\n  put "alarmed" into field "Mood"\nend mouseUp\n';
+
+  it("setScript installe le script en mode auteur et ouvre une transaction", () => {
+    const { engine, events } = makeEngine(demoStack());
+    engine.setMode("build");
+    engine.navigate(10); // carte Guard : le bouton 11 « Show the amulet »
+    engine.setScript(11, SCRIPT);
+    const stack = engine.state() as Stack;
+    expect(scriptOf(stack, 10, 11)).toBe(SCRIPT);
+    const tx = engine.journal().entries[0];
+    expect(tx.cause).toBe('human installation of the script of "Show the amulet"');
+    expect(tx.actor).toEqual({ kind: "human", mode: "author" });
+    const op = tx.ops[0];
+    expect(op.kind).toBe("setScript");
+    if (op.kind !== "setScript") throw new Error("unreachable");
+    expect(op.target).toEqual({ kind: "part", cardId: 10, partId: 11 });
+    expect(op.before).toContain("consult agent"); // le script en place
+    expect(op.after).toBe(SCRIPT);
+    // `changed`, jamais `clicked` : installer n'est pas jouer.
+    expect(events.some((event) => event.type === "changed")).toBe(true);
+    expect(events.some((event) => event.type === "clicked")).toBe(false);
+  });
+
+  it("en mode Jouer, la structure refuse le script (CAR-F-05)", () => {
+    const { engine, events } = makeEngine(demoStack());
+    engine.navigate(10);
+    const before = scriptOf(engine.state() as Stack, 10, 11);
+    engine.setScript(11, SCRIPT);
+    expect(engine.lastRefusal()?.rule).toBe("mode-browse");
+    expect(scriptOf(engine.state() as Stack, 10, 11)).toBe(before);
+    expect(engine.journal().entries).toHaveLength(1); // la navigation seule
+    expect(events.some((event) => event.type === "refused")).toBe(true);
+  });
+
+  it("un script identique n'ouvre aucune transaction", () => {
+    const { engine } = makeEngine(demoStack());
+    engine.setMode("build");
+    engine.navigate(10);
+    engine.setScript(11, scriptOf(engine.state() as Stack, 10, 11));
+    expect(engine.journal().entries).toHaveLength(1); // la navigation seule
+  });
+
+  it("l'installation s'annule et se refait comme le reste du journal", () => {
+    const { engine } = makeEngine(demoStack());
+    engine.setMode("build");
+    engine.navigate(10);
+    const before = scriptOf(engine.state() as Stack, 10, 11);
+    engine.setScript(11, SCRIPT);
+    engine.undo();
+    expect(scriptOf(engine.state() as Stack, 10, 11)).toBe(before);
+    engine.redo();
+    expect(scriptOf(engine.state() as Stack, 10, 11)).toBe(SCRIPT);
   });
 });
 
