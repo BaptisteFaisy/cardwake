@@ -56,6 +56,7 @@ export function Shelf(props: ShelfProps): JSX.Element {
           type="file"
           accept=".json,application/json"
           className="visually-hidden"
+          aria-label={t("shelf.openFile")}
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) onOpenFile(file);
