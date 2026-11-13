@@ -162,3 +162,71 @@ installé qu'après accord humain**, au vu de la relecture en clair et de la
 différence avec l'ancien script. Un agent n'écrit jamais d'opération sans
 passer par `authorize`, et ne modifie jamais un niveau, une consigne ou un
 budget.
+
+## 9. Les gestes qui manquent souvent
+
+Cinq commandes pour l'atelier courant. Toutes sans réseau, sauf `cassette
+record` — qui refuse de démarrer sans un relais **et** un `--yes` explicite,
+parce qu'un enregistrement coûte de l'argent.
+
+### `cardwake doctor` — l'état de l'atelier
+
+```sh
+cardwake doctor
+```
+
+```text
+ok   stacks               3 stack(s) read back
+ok   language reference   both copies say the same thing
+ok   guards               gardes : 373 fichier(s) contrôlé(s), 0 problème
+ok   cassettes            every recording matches what the stacks ask for
+```
+
+Un contrôle en `ko` (une pile illisible, une cassette périmée, les deux
+copies de la référence divergentes, une garde rouge) fait sortir la commande
+en 1. Avec `--relay <url>`, un contrôle de plus interroge le relais (modèles
+disponibles) ; sans cet argument, la commande ne touche **jamais** au réseau.
+
+### `cardwake new` — une pile neuve
+
+```sh
+cardwake new stacks/first.json
+```
+
+```text
+stacks/first.json: new stack "first" — 1 card, 1 field, 1 button
+```
+
+Le fichier produit passe `cardwake validate` tel quel. Un fichier existant
+n'est **pas** écrasé (code 1) sauf `--overwrite`.
+
+### `cardwake explain script` — la relecture ligne à ligne
+
+```sh
+cardwake explain script stacks/manor/stack.json --object "Guard/Show the amulet"
+```
+
+Chaque ligne du script est suivie de ce qu'elle fait en clair, avec son
+numéro : c'est ce qu'un auteur relit avant d'accepter un script proposé.
+
+### `cardwake serve` — le site en local
+
+```sh
+cardwake serve --port 5173 --open
+```
+
+Sert le site construit (`apps/web/dist`) sur `http://127.0.0.1:5173/`, sans
+clé et sans réseau : le site joue en mode enregistré. Si le site n'est pas
+construit, la commande le construit et le dit.
+
+### `cardwake cassette record` — enregistrer, quand on le décide
+
+```sh
+cardwake cassette record stacks/manor/stack.json --relay http://127.0.0.1:8787/v1 --yes --max-calls 10
+```
+
+Sans `--relay`, la commande **refuse** (code 2) : c'est le verrou
+`no-live-model-guard`. Avec un relais mais sans `--yes`, elle s'arrête (code
+3) : le geste coûte de l'argent, un humain le décide. Une fois lancée, elle
+plafonne à `--max-calls` appels (10 par défaut) et rend le compte à l'écran.
+La clé reste au relais : la CLI ne lit aucun secret et n'en imprime aucun.
