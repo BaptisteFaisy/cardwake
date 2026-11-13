@@ -1,15 +1,15 @@
 {
-  "startedAt": "2026-11-13T16:01:25.822Z",
+  "startedAt": "2026-11-13T16:37:12.129Z",
   "model": "combo/cheap",
   "total": 40,
-  "ok": 35,
-  "okFirstTry": 34,
-  "repaired": 3,
+  "ok": 34,
+  "okFirstTry": 31,
+  "repaired": 8,
   "byFamily": {
     "agents": {
       "total": 6,
-      "ok": 5,
-      "firstTry": 4
+      "ok": 4,
+      "firstTry": 3
     },
     "calcul": {
       "total": 8,
@@ -19,7 +19,7 @@
     "chunks": {
       "total": 8,
       "ok": 7,
-      "firstTry": 7
+      "firstTry": 6
     },
     "conditions": {
       "total": 6,
@@ -28,13 +28,13 @@
     },
     "loops": {
       "total": 6,
-      "ok": 5,
-      "firstTry": 5
+      "ok": 4,
+      "firstTry": 3
     },
     "navigation": {
       "total": 6,
-      "ok": 4,
-      "firstTry": 4
+      "ok": 5,
+      "firstTry": 5
     }
   },
   "tasks": [
@@ -52,8 +52,8 @@
       "failures": [],
       "errors": [],
       "calls": 4,
-      "inputTokens": 10233,
-      "outputTokens": 910,
+      "inputTokens": 10194,
+      "outputTokens": 1583,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -61,83 +61,90 @@
     {
       "id": "agents-02",
       "family": "agents",
-      "status": "error",
-      "script": null,
-      "paraphrase": [],
-      "failures": [],
+      "status": "failed",
+      "script": "on chat\n  put \"Hello!\" into field \"Says\"\nend chat",
+      "paraphrase": [
+        "When the message chat arrives:",
+        "  Write \"Hello!\" in field Says.",
+        "End of the chat handler."
+      ],
+      "failures": [
+        "no field of card \"Reception\" contains what the agent said: \"welcome\""
+      ],
       "errors": [
-        "the model wrote no usable script: The second answer was not readable structured output."
+        "the model wrote no usable script: The model gateway failed: The model provider refused the call (status 502): {\"error\":\"the provider could not be reached\"} The provider is unavailable; try again later."
       ],
       "calls": 3,
-      "inputTokens": 18682,
-      "outputTokens": 8445,
-      "firstTry": false,
-      "repaired": false,
-      "attempts": 1
-    },
-    {
-      "id": "agents-03",
-      "family": "agents",
-      "status": "ok",
-      "script": "on mouseUp\n  tell agent of card \"Kitchen\" field \"Order\"\nend mouseUp",
-      "paraphrase": [
-        "When the message mouseUp arrives:",
-        "  Tell the agent of card Kitchen: field Order, without waiting for an answer.",
-        "End of the mouseUp handler."
-      ],
-      "failures": [],
-      "errors": [],
-      "calls": 4,
-      "inputTokens": 10002,
-      "outputTokens": 1872,
-      "firstTry": true,
-      "repaired": false,
-      "attempts": 1
-    },
-    {
-      "id": "agents-04",
-      "family": "agents",
-      "status": "ok",
-      "script": "on mouseUp\n  consult agent with \"Write a one-sentence summary of the following meeting minutes. Return only the summary sentence: \" & field \"Minutes\" of card \"Meeting\"\n  put it into field \"Summary\" of card \"Meeting\"\nend mouseUp",
-      "paraphrase": [
-        "When the message mouseUp arrives:",
-        "  Ask this card's agent: \"Write a one-sentence summary of the following meeting minutes. Return only the summary sentence: \" followed by field Minutes of card Meeting, and wait for its answer.",
-        "  Write the last result in field Summary of card Meeting.",
-        "End of the mouseUp handler."
-      ],
-      "failures": [],
-      "errors": [],
-      "calls": 4,
-      "inputTokens": 15246,
-      "outputTokens": 3459,
+      "inputTokens": 13625,
+      "outputTokens": 7414,
       "firstTry": false,
       "repaired": true,
       "attempts": 2
     },
     {
-      "id": "agents-05",
+      "id": "agents-03",
+      "family": "agents",
+      "status": "failed",
+      "script": "-- Button \"Send to kitchen\" of card \"Waiter\"\non mouseUp\n  if field \"Order\" is empty then\n    answer \"The order is empty.\"\n    exit mouseUp\n  end if\n  tell agent of card \"Kitchen\" field \"Order\"\n  put \"Sent to kitchen: \" & field \"Order\" after field \"Log\"\nend mouseUp",
+      "paraphrase": [
+        "When the message mouseUp arrives:",
+        "  If field Order is empty:",
+        "    Show a dialog that says \"The order is empty.\" and offers a single button.",
+        "    stop here.",
+        "  End of the condition.",
+        "  Tell the agent of card Kitchen: field Order, without waiting for an answer.",
+        "  Write \"Sent to kitchen: \" followed by field Order after the content of field Log.",
+        "End of the mouseUp handler."
+      ],
+      "failures": [
+        "no field of card \"Kitchen\" shows the message sent: \"two soups\""
+      ],
+      "errors": [],
+      "calls": 1,
+      "inputTokens": 6308,
+      "outputTokens": 254,
+      "firstTry": false,
+      "repaired": true,
+      "attempts": 2
+    },
+    {
+      "id": "agents-04",
       "family": "agents",
       "status": "ok",
-      "script": "-- Part \"Answer\" of card \"Cafe\"\n-- Answers a guest about today's menu, using the card's agent,\n-- and falls back to the raw menu when the agent stays silent.\non openCard\n  consult agent with \"A guest asks: what is served today at the cafe? The menu of the day is:\" & return & field \"Menu\" & return & \"Reply in one short sentence.\"\n  put it into reply\n  if reply is empty then\n    put \"Today at the cafe:\" && field \"Menu\" into field \"Answer\"\n  else\n    put reply into field \"Answer\"\n  end if\nend openCard\n",
+      "script": "on mouseUp\n  consult agent with \"In one sentence, summarise the following minutes: \" & field \"Minutes\"\n  put it into field \"Summary\"\nend mouseUp",
       "paraphrase": [
-        "When the message openCard arrives:",
-        "  Ask this card's agent: \"A guest asks: what is served today at the cafe? The menu of the day is:\" followed by a line break followed by field Menu followed by a line break followed by \"Reply in one short sentence.\", and wait for its answer.",
-        "  Write the last result in reply.",
-        "  If reply is empty:",
-        "    Write \"Today at the cafe:\" followed by a space and field Menu in field Answer.",
-        "  Otherwise:",
-        "    Write reply in field Answer.",
-        "  End of the condition.",
-        "End of the openCard handler."
+        "When the message mouseUp arrives:",
+        "  Ask this card's agent: \"In one sentence, summarise the following minutes: \" followed by field Minutes, and wait for its answer.",
+        "  Write the last result in field Summary.",
+        "End of the mouseUp handler."
       ],
       "failures": [],
       "errors": [],
-      "calls": 2,
-      "inputTokens": 12519,
-      "outputTokens": 7070,
+      "calls": 3,
+      "inputTokens": 8795,
+      "outputTokens": 1419,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
+    },
+    {
+      "id": "agents-05",
+      "family": "agents",
+      "status": "ok",
+      "script": "on mouseUp\n  put field \"Menu\" into field \"Answer\"\nend mouseUp",
+      "paraphrase": [
+        "When the message mouseUp arrives:",
+        "  Write field Menu in field Answer.",
+        "End of the mouseUp handler."
+      ],
+      "failures": [],
+      "errors": [],
+      "calls": 6,
+      "inputTokens": 22325,
+      "outputTokens": 8454,
+      "firstTry": false,
+      "repaired": true,
+      "attempts": 2
     },
     {
       "id": "agents-06",
@@ -152,8 +159,8 @@
       "failures": [],
       "errors": [],
       "calls": 4,
-      "inputTokens": 9974,
-      "outputTokens": 2648,
+      "inputTokens": 9631,
+      "outputTokens": 3608,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -162,21 +169,21 @@
       "id": "calcul-01",
       "family": "calcul",
       "status": "ok",
-      "script": "on mouseUp\n  put 0 into total\n  repeat for each line row in field \"Lines\"\n    add item 2 of row * item 3 of row to total\n  end repeat\n  put round(total, 2) into field \"Subtotal\"\nend mouseUp",
+      "script": "on mouseUp\n  put 0 into subtotal\n  repeat for each line row in field \"Lines\"\n    add item 2 of row * item 3 of row to subtotal\n  end repeat\n  put round(subtotal, 2) into field \"Subtotal\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
-        "  Write 0 in total.",
+        "  Write 0 in subtotal.",
         "  Repeat for each line of field Lines, calling it row:",
-        "    Add item 2 of row times item 3 of row to total.",
+        "    Add item 2 of row times item 3 of row to subtotal.",
         "  End of the loop.",
-        "  Write total rounded to 2 decimals in field Subtotal.",
+        "  Write subtotal rounded to 2 decimals in field Subtotal.",
         "End of the mouseUp handler."
       ],
       "failures": [],
       "errors": [],
       "calls": 1,
       "inputTokens": 6244,
-      "outputTokens": 863,
+      "outputTokens": 1324,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -195,7 +202,7 @@
       "errors": [],
       "calls": 1,
       "inputTokens": 6233,
-      "outputTokens": 626,
+      "outputTokens": 443,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -204,29 +211,27 @@
       "id": "calcul-03",
       "family": "calcul",
       "status": "ok",
-      "script": "on mouseUp\n  put 0 into total\n  put 0 into count\n  repeat for each line row in field \"Scores\"\n    if row is not empty then\n      add row to total\n      add 1 to count\n    end if\n  end repeat\n  if count > 0 then\n    put round(total / count, 1) into field \"Average\"\n  else\n    put empty into field \"Average\"\n  end if\nend mouseUp",
+      "script": "on mouseUp\n  put 0 into total\n  put the number of lines in field \"Scores\" into lineCount\n  if lineCount = 0 then\n    put empty into field \"Average\"\n    exit mouseUp\n  end if\n  repeat for each line score in field \"Scores\"\n    add score to total\n  end repeat\n  divide total by lineCount\n  put round(total, 2) into field \"Average\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
         "  Write 0 in total.",
-        "  Write 0 in count.",
-        "  Repeat for each line of field Scores, calling it row:",
-        "    If row is not empty:",
-        "      Add row to total.",
-        "      Add 1 to count.",
-        "    End of the condition.",
-        "  End of the loop.",
-        "  If count is greater than 0:",
-        "    Write total divided by count rounded to 1 decimals in field Average.",
-        "  Otherwise:",
+        "  Write the number of lines in field Scores in lineCount.",
+        "  If lineCount is equal to 0:",
         "    Write nothing in field Average.",
+        "    stop here.",
         "  End of the condition.",
+        "  Repeat for each line of field Scores, calling it score:",
+        "    Add score to total.",
+        "  End of the loop.",
+        "  Divide total by lineCount.",
+        "  Write total rounded to 2 decimals in field Average.",
         "End of the mouseUp handler."
       ],
       "failures": [],
       "errors": [],
-      "calls": 1,
-      "inputTokens": 6237,
-      "outputTokens": 2041,
+      "calls": 2,
+      "inputTokens": 12471,
+      "outputTokens": 6795,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -235,17 +240,17 @@
       "id": "calcul-04",
       "family": "calcul",
       "status": "ok",
-      "script": "on mouseUp\n  put round(field \"Price\" * 0.75, 2) into field \"Discounted\"\nend mouseUp",
+      "script": "on mouseUp\n  put field \"Price\" * 0.75 into field \"Discounted\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
-        "  Write field Price times 0.75 rounded to 2 decimals in field Discounted.",
+        "  Multiply field Price by 0.75 and write the result in field Discounted.",
         "End of the mouseUp handler."
       ],
       "failures": [],
       "errors": [],
       "calls": 1,
       "inputTokens": 6229,
-      "outputTokens": 746,
+      "outputTokens": 1812,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -254,19 +259,17 @@
       "id": "calcul-05",
       "family": "calcul",
       "status": "ok",
-      "script": "on mouseUp\n  if field \"Amount\" is not empty then\n    add field \"Amount\" to field \"Counter\"\n  end if\nend mouseUp",
+      "script": "on mouseUp\n  add field \"Amount\" to field \"Counter\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
-        "  If field Amount is not empty:",
-        "    Add field Amount to field Counter.",
-        "  End of the condition.",
+        "  Add field Amount to field Counter.",
         "End of the mouseUp handler."
       ],
       "failures": [],
       "errors": [],
       "calls": 1,
       "inputTokens": 6228,
-      "outputTokens": 1795,
+      "outputTokens": 1700,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -275,17 +278,20 @@
       "id": "calcul-06",
       "family": "calcul",
       "status": "ok",
-      "script": "on mouseUp\n  put item 2 of line 1 of field \"New\" * item 3 of line 1 of field \"New\" into field \"Total\"\nend mouseUp",
+      "script": "on mouseUp\n  if field \"New\" is empty then exit mouseUp\n  put item 2 of line 1 of field \"New\" * item 3 of line 1 of field \"New\" into field \"Total\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
+        "  If field New is empty:",
+        "    stop here.",
+        "  End of the condition.",
         "  Multiply item 2 of line 1 of field New by item 3 of line 1 of field New and write the result in field Total.",
         "End of the mouseUp handler."
       ],
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6260,
-      "outputTokens": 661,
+      "inputTokens": 6232,
+      "outputTokens": 1936,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -303,8 +309,8 @@
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6273,
-      "outputTokens": 398,
+      "inputTokens": 6244,
+      "outputTokens": 1139,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -313,7 +319,7 @@
       "id": "calcul-08",
       "family": "calcul",
       "status": "ok",
-      "script": "on mouseUp\n  put field \"Box\" + field \"Crate\" into field \"Total\"\nend mouseUp",
+      "script": "-- Button \"Weigh\" of card \"Weights\"\non mouseUp\n  put field \"Box\" + field \"Crate\" into field \"Total\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
         "  Add field Crate to field Box and write the result in field Total.",
@@ -322,8 +328,8 @@
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6244,
-      "outputTokens": 785,
+      "inputTokens": 6229,
+      "outputTokens": 204,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -332,20 +338,17 @@
       "id": "chunks-01",
       "family": "chunks",
       "status": "ok",
-      "script": "on mouseUp\n  if field \"New\" is empty then\n    exit mouseUp\n  end if\n  put item 1 of line 1 of field \"New\" into field \"Label\"\nend mouseUp",
+      "script": "on mouseUp\n  put item 1 of line 1 of field \"New\" into field \"Label\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
-        "  If field New is empty:",
-        "    stop here.",
-        "  End of the condition.",
         "  Write item 1 of line 1 of field New in field Label.",
         "End of the mouseUp handler."
       ],
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6264,
-      "outputTokens": 1466,
+      "inputTokens": 6223,
+      "outputTokens": 271,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -353,17 +356,19 @@
     {
       "id": "chunks-02",
       "family": "chunks",
-      "status": "error",
-      "script": null,
-      "paraphrase": [],
-      "failures": [],
-      "errors": [
-        "the model wrote no usable script: Expected \"into\", \"before\" or \"after\" after the value."
+      "status": "ok",
+      "script": "-- Button \"Last word\" on card \"Story\"\non mouseUp\n  put word -1 of field \"Sentence\" into field \"Last\"\nend mouseUp",
+      "paraphrase": [
+        "When the message mouseUp arrives:",
+        "  Write word -1 of field Sentence in field Last.",
+        "End of the mouseUp handler."
       ],
-      "calls": 2,
-      "inputTokens": 12540,
-      "outputTokens": 600,
-      "firstTry": false,
+      "failures": [],
+      "errors": [],
+      "calls": 1,
+      "inputTokens": 6216,
+      "outputTokens": 152,
+      "firstTry": true,
       "repaired": false,
       "attempts": 1
     },
@@ -371,43 +376,37 @@
       "id": "chunks-03",
       "family": "chunks",
       "status": "ok",
-      "script": "on mouseUp\n  put the number of lines in field \"New\" into field \"Count\"\n  if field \"Count\" is empty then\n    put 0 into field \"Count\"\n  end if\nend mouseUp",
+      "script": "on mouseUp\n  put the number of lines in field \"New\" into field \"Count\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
         "  Write the number of lines in field New in field Count.",
-        "  If field Count is empty:",
-        "    Write 0 in field Count.",
-        "  End of the condition.",
         "End of the mouseUp handler."
       ],
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6227,
-      "outputTokens": 2962,
-      "firstTry": true,
-      "repaired": false,
-      "attempts": 1
+      "inputTokens": 6292,
+      "outputTokens": 1080,
+      "firstTry": false,
+      "repaired": true,
+      "attempts": 2
     },
     {
       "id": "chunks-04",
       "family": "chunks",
-      "status": "ok",
-      "script": "on mouseUp\n  put field \"Draft\" into field \"Fixed\"\n  put \"fixed\" into word 4 of field \"Fixed\"\nend mouseUp",
-      "paraphrase": [
-        "When the message mouseUp arrives:",
-        "  Write field Draft in field Fixed.",
-        "  Write \"fixed\" in word 4 of field Fixed.",
-        "End of the mouseUp handler."
-      ],
+      "status": "error",
+      "script": null,
+      "paraphrase": [],
       "failures": [],
-      "errors": [],
-      "calls": 1,
-      "inputTokens": 6226,
-      "outputTokens": 2085,
-      "firstTry": true,
+      "errors": [
+        "the model wrote no usable script: The model gateway failed: The model provider refused the call (status 502): {\"error\":\"the provider could not be reached\"} The provider is unavailable; try again later."
+      ],
+      "calls": 0,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "firstTry": false,
       "repaired": false,
-      "attempts": 1
+      "attempts": 2
     },
     {
       "id": "chunks-05",
@@ -423,7 +422,7 @@
       "errors": [],
       "calls": 1,
       "inputTokens": 6224,
-      "outputTokens": 799,
+      "outputTokens": 497,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -432,7 +431,7 @@
       "id": "chunks-06",
       "family": "chunks",
       "status": "ok",
-      "script": "on mouseUp\n  put field \"List\" into field \"Sorted\"\n  sort lines of field \"Sorted\" numeric\nend mouseUp",
+      "script": "on mouseUp\n  put field \"List\" into field \"Sorted\"\n  sort lines of field \"Sorted\" ascending numeric\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
         "  Write field List in field Sorted.",
@@ -442,8 +441,8 @@
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6240,
-      "outputTokens": 1709,
+      "inputTokens": 6267,
+      "outputTokens": 917,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -452,7 +451,7 @@
       "id": "chunks-07",
       "family": "chunks",
       "status": "ok",
-      "script": "-- Button \"City\" of card \"Address\"\non mouseUp\n  put line 2 of field \"Full\" into field \"City\"\nend mouseUp",
+      "script": "on mouseUp\n  put line 2 of field \"Full\" into field \"City\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
         "  Write line 2 of field Full in field City.",
@@ -461,8 +460,8 @@
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6220,
-      "outputTokens": 212,
+      "inputTokens": 6232,
+      "outputTokens": 1104,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -481,7 +480,7 @@
       "errors": [],
       "calls": 1,
       "inputTokens": 6225,
-      "outputTokens": 865,
+      "outputTokens": 401,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -490,7 +489,7 @@
       "id": "conditions-01",
       "family": "conditions",
       "status": "ok",
-      "script": "-- Button \"Add\" of card \"Tasks\"\non mouseUp\n  if field \"New\" is empty then\n    exit mouseUp\n  end if\n  put field \"New\" & return after field \"List\"\n  put empty into field \"New\"\nend mouseUp",
+      "script": "on mouseUp\n  if field \"New\" is empty then\n    exit mouseUp\n  end if\n  put field \"New\" & return after field \"List\"\n  put empty into field \"New\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
         "  If field New is empty:",
@@ -503,8 +502,8 @@
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6220,
-      "outputTokens": 172,
+      "inputTokens": 6232,
+      "outputTokens": 2835,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -513,21 +512,25 @@
       "id": "conditions-02",
       "family": "conditions",
       "status": "ok",
-      "script": "-- Button \"Add\" of card \"Tasks\"\non mouseUp\n  if field \"New\" is empty then\n    exit mouseUp\n  end if\n  put field \"New\" & return after field \"List\"\n  put empty into field \"New\"\nend mouseUp",
+      "script": "on mouseUp\n  if field \"New\" is empty then\n    exit mouseUp\n  end if\n  if field \"List\" is empty then\n    put field \"New\" into field \"List\"\n  else\n    put return & field \"New\" after field \"List\"\n  end if\n  put empty into field \"New\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
         "  If field New is empty:",
         "    stop here.",
         "  End of the condition.",
-        "  Write field New followed by a line break after the content of field List.",
+        "  If field List is empty:",
+        "    Write field New in field List.",
+        "  Otherwise:",
+        "    Write a line break followed by field New after the content of field List.",
+        "  End of the condition.",
         "  Write nothing in field New.",
         "End of the mouseUp handler."
       ],
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6224,
-      "outputTokens": 173,
+      "inputTokens": 6236,
+      "outputTokens": 2594,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -536,13 +539,9 @@
       "id": "conditions-03",
       "family": "conditions",
       "status": "ok",
-      "script": "on mouseUp\n  if field \"Spent\" is empty then\n    put \"Over budget\" into field \"Verdict\"\n    exit mouseUp\n  end if\n  if field \"Spent\" > 100 then\n    put \"Over budget\" into field \"Verdict\"\n  else\n    put \"You are fine\" into field \"Verdict\"\n  end if\nend mouseUp",
+      "script": "on mouseUp\n  if field \"Spent\" > 100 then\n    put \"Over budget\" into field \"Verdict\"\n  else\n    put \"You are fine\" into field \"Verdict\"\n  end if\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
-        "  If field Spent is empty:",
-        "    Write \"Over budget\" in field Verdict.",
-        "    stop here.",
-        "  End of the condition.",
         "  If field Spent is greater than 100:",
         "    Write \"Over budget\" in field Verdict.",
         "  Otherwise:",
@@ -553,8 +552,8 @@
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6220,
-      "outputTokens": 206,
+      "inputTokens": 6231,
+      "outputTokens": 1653,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -563,10 +562,10 @@
       "id": "conditions-04",
       "family": "conditions",
       "status": "ok",
-      "script": "on mouseUp\n  if field \"Note\" contains \"urgent\" then\n    put \"flagged\" into field \"Flag\"\n  else\n    put \"clear\" into field \"Flag\"\n  end if\nend mouseUp",
+      "script": "on mouseUp\n  if lower(field \"Note\") contains \"urgent\" then\n    put \"flagged\" into field \"Flag\"\n  else\n    put \"clear\" into field \"Flag\"\n  end if\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
-        "  If field Note contains \"urgent\":",
+        "  If the lower-case form of field Note contains \"urgent\":",
         "    Write \"flagged\" in field Flag.",
         "  Otherwise:",
         "    Write \"clear\" in field Flag.",
@@ -577,7 +576,7 @@
       "errors": [],
       "calls": 1,
       "inputTokens": 6233,
-      "outputTokens": 2007,
+      "outputTokens": 2804,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -586,13 +585,13 @@
       "id": "conditions-05",
       "family": "conditions",
       "status": "ok",
-      "script": "on mouseUp\n  if field \"Email\" is not empty then\n    go to card \"Inside\"\n  else\n    put \"Missing email\" into field \"Status\"\n  end if\nend mouseUp",
+      "script": "on mouseUp\n  if field \"Email\" is empty then\n    put \"Missing email\" into field \"Status\"\n  else\n    go to card \"Inside\"\n  end if\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
-        "  If field Email is not empty:",
-        "    Go to card Inside.",
-        "  Otherwise:",
+        "  If field Email is empty:",
         "    Write \"Missing email\" in field Status.",
+        "  Otherwise:",
+        "    Go to card Inside.",
         "  End of the condition.",
         "End of the mouseUp handler."
       ],
@@ -600,7 +599,7 @@
       "errors": [],
       "calls": 1,
       "inputTokens": 6235,
-      "outputTokens": 1380,
+      "outputTokens": 818,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -609,10 +608,10 @@
       "id": "conditions-06",
       "family": "conditions",
       "status": "ok",
-      "script": "on mouseUp\n  if field \"Number\" mod 2 = 0 then\n    put \"even\" into field \"Parity\"\n  else\n    put \"odd\" into field \"Parity\"\n  end if\nend mouseUp",
+      "script": "on mouseUp\n  if (field \"Number\" mod 2) = 0 then\n    put \"even\" into field \"Parity\"\n  else\n    put \"odd\" into field \"Parity\"\n  end if\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
-        "  If field Number modulo 2 is equal to 0:",
+        "  If (field Number modulo 2) is equal to 0:",
         "    Write \"even\" in field Parity.",
         "  Otherwise:",
         "    Write \"odd\" in field Parity.",
@@ -623,7 +622,7 @@
       "errors": [],
       "calls": 1,
       "inputTokens": 6228,
-      "outputTokens": 2554,
+      "outputTokens": 1306,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -648,7 +647,7 @@
       "errors": [],
       "calls": 1,
       "inputTokens": 6275,
-      "outputTokens": 1897,
+      "outputTokens": 1625,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -656,25 +655,30 @@
     {
       "id": "loops-02",
       "family": "loops",
-      "status": "ok",
-      "script": "on mouseUp\n  put empty into field \"Table\"\n  put \"1 x 5 = 5\" into field \"Table\"\n  repeat with n = 2 to 5\n    put return & n & \" x 5 = \" & (n * 5) after field \"Table\"\n  end repeat\nend mouseUp",
+      "status": "failed",
+      "script": "on mouseUp\n  put empty into tableText\n  repeat with n = 1 to 5\n    if n > 1 then\n      put return after tableText\n    end if\n    put n & \" x 5 = \" & (n * 5) after tableText\n  end repeat\n  put tableText into field \"Table\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
-        "  Write nothing in field Table.",
-        "  Write \"1 x 5 = 5\" in field Table.",
-        "  Repeat with n going from 2 to 5:",
-        "    Write a line break followed by n followed by \" x 5 = \" followed by (n times 5) after the content of field Table.",
+        "  Write nothing in tableText.",
+        "  Repeat with n going from 1 to 5:",
+        "    If n is greater than 1:",
+        "      Write a line break after the content of tableText.",
+        "    End of the condition.",
+        "    Write n followed by \" x 5 = \" followed by (n times 5) after the content of tableText.",
         "  End of the loop.",
+        "  Write tableText in field Table.",
         "End of the mouseUp handler."
       ],
-      "failures": [],
+      "failures": [
+        "field \"Table\" of card \"Chalkboard\" is \"5 x 5 = 25\", expected \"1 x 5 = 5\\n2 x 5 = 10\\n3 x 5 = 15\\n4 x 5 = 20\\n5 x 5 = 25\""
+      ],
       "errors": [],
-      "calls": 1,
-      "inputTokens": 6260,
-      "outputTokens": 1513,
-      "firstTry": true,
-      "repaired": false,
-      "attempts": 1
+      "calls": 2,
+      "inputTokens": 12590,
+      "outputTokens": 3722,
+      "firstTry": false,
+      "repaired": true,
+      "attempts": 2
     },
     {
       "id": "loops-03",
@@ -694,7 +698,7 @@
       "errors": [],
       "calls": 1,
       "inputTokens": 6237,
-      "outputTokens": 1137,
+      "outputTokens": 703,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -702,33 +706,27 @@
     {
       "id": "loops-04",
       "family": "loops",
-      "status": "failed",
-      "script": "on mouseUp\n  put empty into field \"Long\"\n  if field \"Text\" is empty then\n    exit mouseUp\n  end if\n  put empty into longestWord\n  repeat for each word wordInEssay in field \"Text\"\n    if length(wordInEssay) > length(longestWord) then\n      put wordInEssay into longestWord\n    end if\n  end repeat\n  put longestWord into field \"Long\"\nend mouseUp",
+      "status": "ok",
+      "script": "on mouseUp\n  put 0 into wordCount\n  repeat for each word currentWord in field \"Text\"\n    if length(currentWord) > 4 then\n      add 1 to wordCount\n    end if\n  end repeat\n  put wordCount into field \"Long\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
-        "  Write nothing in field Long.",
-        "  If field Text is empty:",
-        "    stop here.",
-        "  End of the condition.",
-        "  Write nothing in longestWord.",
-        "  Repeat for each word of field Text, calling it wordInEssay:",
-        "    If the length of wordInEssay is greater than the length of longestWord:",
-        "      Write wordInEssay in longestWord.",
+        "  Write 0 in wordCount.",
+        "  Repeat for each word of field Text, calling it currentWord:",
+        "    If the length of currentWord is greater than 4:",
+        "      Add 1 to wordCount.",
         "    End of the condition.",
         "  End of the loop.",
-        "  Write longestWord in field Long.",
+        "  Write wordCount in field Long.",
         "End of the mouseUp handler."
       ],
-      "failures": [
-        "field \"Long\" of card \"Essay\" is \"elephants\", expected \"3\""
-      ],
+      "failures": [],
       "errors": [],
-      "calls": 4,
-      "inputTokens": 25028,
-      "outputTokens": 9384,
-      "firstTry": false,
-      "repaired": true,
-      "attempts": 2
+      "calls": 1,
+      "inputTokens": 6257,
+      "outputTokens": 1552,
+      "firstTry": true,
+      "repaired": false,
+      "attempts": 1
     },
     {
       "id": "loops-05",
@@ -742,38 +740,43 @@
       ],
       "failures": [],
       "errors": [],
-      "calls": 1,
-      "inputTokens": 6222,
-      "outputTokens": 2922,
-      "firstTry": true,
-      "repaired": false,
-      "attempts": 1
+      "calls": 4,
+      "inputTokens": 24947,
+      "outputTokens": 10921,
+      "firstTry": false,
+      "repaired": true,
+      "attempts": 2
     },
     {
       "id": "loops-06",
       "family": "loops",
-      "status": "ok",
-      "script": "on mouseUp\n  put empty into field \"Doubled\"\n  repeat for each line amount in field \"Amounts\"\n    if field \"Doubled\" is empty then\n      put amount * 2 into field \"Doubled\"\n    else\n      put return & (amount * 2) after field \"Doubled\"\n    end if\n  end repeat\nend mouseUp",
+      "status": "failed",
+      "script": "on mouseUp\n  put empty into doubledList\n  repeat for each line amountLine in field \"Amounts\"\n    if doubledList is empty then\n      put (amountLine * 2) into doubledList\n    else\n      put return & (amountLine * 2) after doubledList\n    end if\n  end repeat\n  put doubledList into field \"Doubled\"\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
-        "  Write nothing in field Doubled.",
-        "  Repeat for each line of field Amounts, calling it amount:",
-        "    If field Doubled is empty:",
-        "      Multiply amount by 2 and write the result in field Doubled.",
+        "  Write nothing in doubledList.",
+        "  Repeat for each line of field Amounts, calling it amountLine:",
+        "    If doubledList is empty:",
+        "      Write (amountLine times 2) in doubledList.",
         "    Otherwise:",
-        "      Write a line break followed by (amount times 2) after the content of field Doubled.",
+        "      Write a line break followed by (amountLine times 2) after the content of doubledList.",
         "    End of the condition.",
         "  End of the loop.",
+        "  Write doubledList in field Doubled.",
         "End of the mouseUp handler."
       ],
-      "failures": [],
-      "errors": [],
-      "calls": 1,
-      "inputTokens": 6265,
-      "outputTokens": 2145,
-      "firstTry": true,
-      "repaired": false,
-      "attempts": 1
+      "failures": [
+        "field \"Doubled\" of card \"Recipes\" is \"\\n60\", expected \"20\\n40\\n60\""
+      ],
+      "errors": [
+        "the model wrote no usable script: The model gateway failed: The model provider refused the call (status 502): {\"error\":\"the provider could not be reached\"} The provider is unavailable; try again later."
+      ],
+      "calls": 2,
+      "inputTokens": 12532,
+      "outputTokens": 6722,
+      "firstTry": false,
+      "repaired": true,
+      "attempts": 2
     },
     {
       "id": "navigation-01",
@@ -788,8 +791,8 @@
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6248,
-      "outputTokens": 226,
+      "inputTokens": 6208,
+      "outputTokens": 72,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -807,8 +810,8 @@
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6222,
-      "outputTokens": 332,
+      "inputTokens": 6208,
+      "outputTokens": 109,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -827,11 +830,12 @@
         "the card shown is \"Page two\", expected \"Page three\""
       ],
       "errors": [
-        "the button \"Forward\" carries no script"
+        "the button \"Forward\" carries no script",
+        "the model wrote no usable script: The model gateway failed: The model provider refused the call (status 502): {\"error\":\"the provider could not be reached\"} The provider is unavailable; try again later."
       ],
-      "calls": 3,
-      "inputTokens": 18740,
-      "outputTokens": 7864,
+      "calls": 1,
+      "inputTokens": 6219,
+      "outputTokens": 1334,
       "firstTry": false,
       "repaired": true,
       "attempts": 2
@@ -840,7 +844,7 @@
       "id": "navigation-04",
       "family": "navigation",
       "status": "ok",
-      "script": "on mouseUp\n  go previous card\nend mouseUp",
+      "script": "on mouseUp\n  go to previous card\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
         "  Go to the previous card.",
@@ -849,8 +853,8 @@
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6219,
-      "outputTokens": 1191,
+      "inputTokens": 6207,
+      "outputTokens": 70,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -859,7 +863,7 @@
       "id": "navigation-05",
       "family": "navigation",
       "status": "ok",
-      "script": "on mouseUp\n  go to last card\nend mouseUp",
+      "script": "-- Button \"Jump to the end\" of card \"Front\"\non mouseUp\n  go to last card\nend mouseUp",
       "paraphrase": [
         "When the message mouseUp arrives:",
         "  Go to the last card.",
@@ -868,8 +872,8 @@
       "failures": [],
       "errors": [],
       "calls": 1,
-      "inputTokens": 6239,
-      "outputTokens": 1323,
+      "inputTokens": 6227,
+      "outputTokens": 111,
       "firstTry": true,
       "repaired": false,
       "attempts": 1
@@ -877,22 +881,37 @@
     {
       "id": "navigation-06",
       "family": "navigation",
-      "status": "error",
-      "script": null,
-      "paraphrase": [],
-      "failures": [],
-      "errors": [
-        "the model wrote no usable script: Expected \"then\" after the condition."
+      "status": "ok",
+      "script": "on mouseUp\n  put lower(field \"Where\") into place\n  if place is empty then\n    answer \"Type a card name in Where, then press Go.\"\n    exit mouseUp\n  end if\n  if place = lower(the name of card \"Recipes\") then\n    go to card \"Recipes\"\n    exit mouseUp\n  end if\n  if place = lower(the name of card \"Garden\") then\n    go to card \"Garden\"\n    exit mouseUp\n  end if\n  answer \"There is no card named \" & field \"Where\" & \".\"\nend mouseUp",
+      "paraphrase": [
+        "When the message mouseUp arrives:",
+        "  Write the lower-case form of field Where in place.",
+        "  If place is empty:",
+        "    Show a dialog that says \"Type a card name in Where, then press Go.\" and offers a single button.",
+        "    stop here.",
+        "  End of the condition.",
+        "  If place is equal to the lower-case form of the name of card Recipes:",
+        "    Go to card Recipes.",
+        "    stop here.",
+        "  End of the condition.",
+        "  If place is equal to the lower-case form of the name of card Garden:",
+        "    Go to card Garden.",
+        "    stop here.",
+        "  End of the condition.",
+        "  Show a dialog that says \"There is no card named \" followed by field Where followed by \".\" and offers a single button.",
+        "End of the mouseUp handler."
       ],
-      "calls": 3,
-      "inputTokens": 18778,
-      "outputTokens": 7061,
-      "firstTry": false,
+      "failures": [],
+      "errors": [],
+      "calls": 2,
+      "inputTokens": 12502,
+      "outputTokens": 6614,
+      "firstTry": true,
       "repaired": false,
       "attempts": 1
     }
   ],
-  "calls": 63,
-  "inputTokens": 338863,
-  "outputTokens": 86504
+  "calls": 61,
+  "inputTokens": 320471,
+  "outputTokens": 88072
 }

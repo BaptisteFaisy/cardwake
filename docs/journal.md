@@ -136,3 +136,13 @@ une seule forme.
   et trois appels ; l'implémentation en donne trois et quatre, parce que chaque
   tour d'agent est sa propre transaction et que l'agent est rappelé après ses
   appels d'outils. Le comportement observé est celui du cahier.
+- **La seconde cible du jeu, enfin mesurée.** « ≥ 95 % après une réparation »
+  n'avait jamais été mesurée : le lanceur notait fausse une tâche dont le
+  script compilait sans faire ce qu'on attendait, et ne la rejouait pas. Une
+  tâche ratée est désormais rejouée **une fois**, et la demande de réparation
+  porte ce que la pile a réellement montré. Deux passages complets publiés :
+  **85 % et 78 %** au premier coup, **88 % et 85 %** après une réparation. La
+  fourchette est honnête : `combo/cheap` est un modèle **routé automatiquement**
+  chez le fournisseur, la même phrase part donc chez un fournisseur différent
+  d'un appel à l'autre. Sur une cible de 85 %, un modèle routé est un mauvais
+  instrument — mieux vaut la fourchette que le meilleur chiffre.
