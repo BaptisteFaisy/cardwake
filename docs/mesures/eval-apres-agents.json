@@ -1,0 +1,134 @@
+{
+  "startedAt": "2026-11-13T20:08:13.182Z",
+  "model": "combo/cheap",
+  "total": 6,
+  "ok": 2,
+  "okFirstTry": 1,
+  "repaired": 2,
+  "byFamily": {
+    "agents": {
+      "total": 6,
+      "ok": 2,
+      "firstTry": 1
+    }
+  },
+  "tasks": [
+    {
+      "id": "agents-01",
+      "family": "agents",
+      "status": "ok",
+      "script": "-- Button \"Draft\": ask this card's agent and keep its answer\non mouseUp\n  consult agent with \"Write a short thank-you note about this order: \" & field \"Notes\"\n  put it into field \"Follow-up\"\nend mouseUp",
+      "paraphrase": [
+        "When the message mouseUp arrives:",
+        "  Ask this card's agent: \"Write a short thank-you note about this order: \" followed by field Notes, and wait for its answer.",
+        "  Write the last result in field Follow-up.",
+        "End of the mouseUp handler."
+      ],
+      "failures": [],
+      "errors": [],
+      "calls": 4,
+      "inputTokens": 19291,
+      "outputTokens": 2113,
+      "firstTry": false,
+      "repaired": true,
+      "attempts": 2
+    },
+    {
+      "id": "agents-02",
+      "family": "agents",
+      "status": "ok",
+      "script": "on mouseUp\n  -- Chat is handled by the card's agent; its persona should greet the visitor in one short line and write it into field \"Says\".\nend mouseUp",
+      "paraphrase": [
+        "When the message mouseUp arrives:",
+        "End of the mouseUp handler."
+      ],
+      "failures": [],
+      "errors": [],
+      "calls": 3,
+      "inputTokens": 10502,
+      "outputTokens": 2249,
+      "firstTry": true,
+      "repaired": false,
+      "attempts": 1
+    },
+    {
+      "id": "agents-03",
+      "family": "agents",
+      "status": "failed",
+      "script": "on mouseUp\n  tell agent of card \"Kitchen\" \"ORDER \" & field \"Order\"\n  put \"Sent.\" into field \"Log\"\nend mouseUp",
+      "paraphrase": [
+        "When the message mouseUp arrives:",
+        "  Tell the agent of card Kitchen: \"ORDER \" followed by field Order, without waiting for an answer.",
+        "  Write \"Sent.\" in field Log.",
+        "End of the mouseUp handler."
+      ],
+      "failures": [
+        "no field of card \"Kitchen\" shows the message sent: \"two soups\""
+      ],
+      "errors": [
+        "The model call failed: The model provider refused the call (status 429): {\"error\":\"daily limit reached\"} The provider rate limit was reached; try again later.",
+        "the model wrote no usable script: The model gateway failed: The model provider refused the call (status 429): {\"error\":\"daily limit reached\"} The provider rate limit was reached; try again later."
+      ],
+      "calls": 1,
+      "inputTokens": 8330,
+      "outputTokens": 1778,
+      "firstTry": false,
+      "repaired": true,
+      "attempts": 2
+    },
+    {
+      "id": "agents-04",
+      "family": "agents",
+      "status": "error",
+      "script": null,
+      "paraphrase": [],
+      "failures": [],
+      "errors": [
+        "the model wrote no usable script: The model gateway failed: The model provider refused the call (status 429): {\"error\":\"daily limit reached\"} The provider rate limit was reached; try again later."
+      ],
+      "calls": 0,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "firstTry": false,
+      "repaired": false,
+      "attempts": 2
+    },
+    {
+      "id": "agents-05",
+      "family": "agents",
+      "status": "error",
+      "script": null,
+      "paraphrase": [],
+      "failures": [],
+      "errors": [
+        "the model wrote no usable script: The model gateway failed: The model provider refused the call (status 429): {\"error\":\"daily limit reached\"} The provider rate limit was reached; try again later."
+      ],
+      "calls": 0,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "firstTry": false,
+      "repaired": false,
+      "attempts": 2
+    },
+    {
+      "id": "agents-06",
+      "family": "agents",
+      "status": "error",
+      "script": null,
+      "paraphrase": [],
+      "failures": [],
+      "errors": [
+        "the model wrote no usable script: The model gateway failed: The model provider refused the call (status 429): {\"error\":\"daily limit reached\"} The provider rate limit was reached; try again later."
+      ],
+      "calls": 0,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "firstTry": false,
+      "repaired": false,
+      "attempts": 2
+    }
+  ],
+  "calls": 8,
+  "inputTokens": 38123,
+  "outputTokens": 6140
+}
