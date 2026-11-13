@@ -11,7 +11,7 @@
  * au plus long, et la règle du dépôt veut des fichiers de moins de cinq
  * cents lignes.
  */
-import { createBackground, createButton, createCard, createField } from "@cardwake/model";
+import { createBackground, createButton, createCard, createField, currentInk, currentText } from "@cardwake/model";
 import type { Card, Op, Part, Rect, Stack } from "@cardwake/model";
 import type { PropName } from "@cardwake/lang";
 
@@ -20,6 +20,9 @@ export type FieldTarget = { backgroundId?: number; locked: boolean; part: Part }
 
 /** Ce qu'une action de construction produit : les opérations, et le compteur. */
 export type BuiltOps = { ops: Op[]; nextId?: number };
+
+/** Une opération prête à passer `authorizeOp`, avec sa cause lisible en anglais. */
+export type PlannedOp = { cause: string; op: Op };
 
 /**
  * Valeur texte actuelle d'une propriété d'élément : miroir local de l'`ops.ts`
@@ -130,5 +133,60 @@ export function deletePartOps(card: Card, part: Part): Op {
     ...(onBackground && card.background !== null ? { backgroundId: card.background } : {}),
     part,
     index: onBackground ? 0 : card.parts.findIndex((item) => item.id === part.id),
+  };
+}
+
+/**
+ * La saisie humaine d'un champ : `null` quand le texte ne change pas, donc
+ * quand il n'y a rien à journaliser. L'opération porte l'encre d'avant et
+ * d'après : un humain écrit à l'encre noire, l'encre d'agent tombe (CAR-F-42).
+ */
+export function fieldEditOps(stack: Stack, card: Card, partId: number, text: string): PlannedOp | null {
+  const target = fieldTarget(stack, card, partId);
+  if (target === null || target.part.kind !== "field") return null;
+  const before = currentText(stack, card.id, partId);
+  if (before === text) return null;
+  return {
+    cause: `human edit of field "${target.part.name}"`,
+    op: {
+      kind: "setText",
+      cardId: card.id,
+      partId,
+      ...(target.backgroundId !== undefined ? { backgroundId: target.backgroundId } : {}),
+      before,
+      after: text,
+      inkBefore: currentInk(stack, card.id, partId),
+      inkAfter: null,
+    },
+  };
+}
+
+/**
+ * L'installation du script d'un élément (7.7) : `null` quand le script en
+ * place est déjà celui-là. La cible est l'élément, et son fond s'il en vient
+ * (CAR-F-03) — l'opération est réversible, comme toutes celles du journal.
+ */
+export function scriptInstallOps(
+  stack: Stack,
+  card: Card,
+  partId: number,
+  script: string,
+): PlannedOp | null {
+  const part = findPart(stack, card, partId);
+  if (part === undefined || part.script === script) return null;
+  const onBackground = !card.parts.some((item) => item.id === partId);
+  return {
+    cause: `human installation of the script of "${part.name}"`,
+    op: {
+      kind: "setScript",
+      target: {
+        kind: "part",
+        cardId: card.id,
+        partId,
+        ...(onBackground && card.background !== null ? { backgroundId: card.background } : {}),
+      },
+      before: part.script,
+      after: script,
+    },
   };
 }
