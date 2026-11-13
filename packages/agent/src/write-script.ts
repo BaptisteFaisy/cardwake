@@ -28,8 +28,8 @@ import type { Op, OpTarget, Stack, TransactionActor } from "@cardwake/model";
 import { checkScript } from "../../lang/src/check";
 import type { CheckContext, CheckIssue } from "../../lang/src/check";
 import { paraphraseScript } from "../../lang/src/paraphrase";
-import { CassetteMiss } from "./types";
-import type { LlmGateway, LlmMessage, LlmPurpose, LlmResponse } from "./types";
+import { CassetteMiss, responseText } from "./types";
+import type { LlmGateway, LlmMessage, LlmPurpose, LlmRequest, LlmResponse } from "./types";
 import {
   SCRIPT_OUTPUT_SCHEMA,
   firstUserMessage,
@@ -77,13 +77,19 @@ export type WriteScriptOptions = {
 };
 
 /** La sortie structurée du modèle, normalisée : quatre clés toujours présentes. */
-type ModelDraft = { script: string; summary: string; assumptions: string[]; questions: string[] };
+export type ModelDraft = { script: string; summary: string; assumptions: string[]; questions: string[] };
 
 // --------------------------------------------------------------------------
 // Constantes de l'essai à blanc : graine et horloge figées, aucun hasard
 // --------------------------------------------------------------------------
 
-const DEFAULT_MAX_OUTPUT_TOKENS = 2_000;
+/**
+ * Le plafond de sortie par défaut, en jetons. La référence du langage est
+ * longue : à 2 000 jetons la sortie structurée était coupée en pleine
+ * réponse, ce qui forçait une réparation (deux appels au lieu d'un).
+ */
+export const DEFAULT_MAX_OUTPUT_TOKENS = 4_000;
+
 const DRY_RUN_SEED = 2026;
 const DRY_RUN_CLOCK = "1970-01-01T00:00:00.000Z";
 const DRY_RUN_NOW: ReturnType<Determinism["now"]> = {
@@ -102,11 +108,6 @@ const DRY_RUN_GUARDS: Guards = {
 // --------------------------------------------------------------------------
 // Lecture de la sortie du modèle
 // --------------------------------------------------------------------------
-
-/** Le texte des blocs texte d'une réponse, dans l'ordre. */
-function textOf(response: LlmResponse): string {
-  return response.blocks.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("");
-}
 
 /** Normalise ce que le modèle a rendu ; `null` si ce n'est pas un objet. */
 function normalizeDraft(value: unknown): ModelDraft | null {
@@ -141,6 +142,20 @@ function parseDraft(text: string): ModelDraft | null {
   return start >= 0 && end > start ? tryParse(cleaned.slice(start, end + 1)) : null;
 }
 
+/**
+ * La sortie structurée sous sa forme écrite : le même texte JSON que lit
+ * `parseDraft`, les quatre clés dans un ordre stable. L'enregistreur des
+ * cassettes range la réponse sous cette forme.
+ */
+export function draftText(draft: ModelDraft): string {
+  return JSON.stringify({
+    script: draft.script,
+    summary: draft.summary,
+    assumptions: draft.assumptions,
+    questions: draft.questions,
+  });
+}
+
 // --------------------------------------------------------------------------
 // Résultats intermédiaires
 // --------------------------------------------------------------------------
@@ -167,25 +182,48 @@ function issuesText(issues: CheckIssue[]): string {
     .join("\n");
 }
 
-/** Un appel au modèle : consigne système, messages, schéma de sortie. */
-async function callModel(
-  gateway: LlmGateway,
+/**
+ * La forme d'une requête de script : sortie structurée, vitesse prudente, et
+ * le plafond de jetons. Une seule implémentation : la chaîne, l'éditeur et
+ * l'enregistreur des cassettes l'emploient tous, sinon les empreintes ne
+ * concorderaient jamais.
+ */
+function scriptRequest(
   purpose: LlmPurpose,
   system: string,
   messages: LlmMessage[],
   options: WriteScriptOptions,
-): Promise<LlmResponse> {
-  return gateway.call(
-    {
-      purpose,
-      speed: "careful",
-      system,
-      messages,
-      outputSchema: SCRIPT_OUTPUT_SCHEMA,
-      maxOutputTokens: options.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
-    },
-    new AbortController().signal,
+): LlmRequest {
+  return {
+    purpose,
+    speed: "careful",
+    system,
+    messages,
+    outputSchema: SCRIPT_OUTPUT_SCHEMA,
+    maxOutputTokens: options.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
+  };
+}
+
+/**
+ * La requête de brouillon : la phrase, la pile visée, la référence du langage.
+ * C'est elle que l'éditeur envoie et que l'enregistreur rejoue — la même, à
+ * la lettre près.
+ */
+export function scriptDraftRequest(
+  request: WriteScriptRequest,
+  options: WriteScriptOptions,
+): LlmRequest {
+  return scriptRequest(
+    "write-script",
+    scriptSystemPrompt(request, options),
+    [firstUserMessage(request)],
+    options,
   );
+}
+
+/** Un appel au modèle : la requête telle quelle, et un signal d'arrêt. */
+async function callModel(gateway: LlmGateway, request: LlmRequest): Promise<LlmResponse> {
+  return gateway.call(request, new AbortController().signal);
 }
 
 /** Ce que les contrôles savent du monde : la pile autour de l'objet visé. */
@@ -293,12 +331,14 @@ async function checkedDraft(
   if (errorsOf(issues).length > 0 && allowRepair) {
     const repaired = await callModel(
       gateway,
-      "repair-script",
-      system,
-      [repairUserMessage(current.script, issuesText(issues))],
-      options,
+      scriptRequest(
+        "repair-script",
+        system,
+        [repairUserMessage(current.script, issuesText(issues))],
+        options,
+      ),
     );
-    const next = parseDraft(textOf(repaired));
+    const next = parseDraft(responseText(repaired));
     if (next === null || next.script === "") {
       const problems = [...errorsOf(issues), issue("repair-output", "The repair attempt did not return a readable script.")];
       return failed(problems, current.summary, current.assumptions);
@@ -329,8 +369,11 @@ async function askedQuestions(
   system: string,
   options: WriteScriptOptions,
 ): Promise<WriteScriptResult> {
-  const second = await callModel(gateway, "write-script", system, [followupUserMessage(draft.questions)], options);
-  const next = parseDraft(textOf(second));
+  const second = await callModel(
+    gateway,
+    scriptRequest("write-script", system, [followupUserMessage(draft.questions)], options),
+  );
+  const next = parseDraft(responseText(second));
   if (next === null) {
     return failed([issue("model-output", "The second answer was not readable structured output.")], draft.summary, draft.assumptions);
   }
@@ -351,22 +394,25 @@ async function attempt(
   gateway: LlmGateway,
   options: WriteScriptOptions,
 ): Promise<WriteScriptResult> {
-  const system = scriptSystemPrompt(request, options);
-  const first = await callModel(gateway, "write-script", system, [firstUserMessage(request)], options);
-  let draft = parseDraft(textOf(first));
-  if (draft === null) {
+  const draft = scriptDraftRequest(request, options);
+  const first = await callModel(gateway, draft);
+  let parsed = parseDraft(responseText(first));
+  if (parsed === null) {
     const problem = "- The answer was not the expected structured output (a JSON object with script, summary, assumptions and questions).";
-    const repaired = await callModel(gateway, "repair-script", system, [repairUserMessage(textOf(first), problem)], options);
-    draft = parseDraft(textOf(repaired));
-    if (draft === null) return failed([issue("model-output", "The model did not return readable structured output.")]);
+    const repaired = await callModel(
+      gateway,
+      scriptRequest("repair-script", draft.system, [repairUserMessage(responseText(first), problem)], options),
+    );
+    parsed = parseDraft(responseText(repaired));
+    if (parsed === null) return failed([issue("model-output", "The model did not return readable structured output.")]);
   }
-  if (draft.script === "" && draft.questions.length > 0) {
-    return askedQuestions(draft, request, gateway, system, options);
+  if (parsed.script === "" && parsed.questions.length > 0) {
+    return askedQuestions(parsed, request, gateway, draft.system, options);
   }
-  if (draft.script === "") {
-    return failed([issue("empty-script", "The model returned neither a script nor a question.")], draft.summary, draft.assumptions);
+  if (parsed.script === "") {
+    return failed([issue("empty-script", "The model returned neither a script nor a question.")], parsed.summary, parsed.assumptions);
   }
-  return checkedDraft(draft, request, gateway, system, options);
+  return checkedDraft(parsed, request, gateway, draft.system, options);
 }
 
 /**
