@@ -1,0 +1,135 @@
+name: nightly
+
+# Passage de nuit : ce que la CI de PR ne peut pas se permettre.
+#
+# La CI de PR tient en 5 minutes et ne lance les propriétés qu'à 100 tirages
+# (`CARDWAKE_PROP_RUNS=100` dans `ci.yml`). Cette nuit, une fois par jour, on
+# paie le prix plein :
+#   - les propriétés fast-check à 10 000 tirages (`CARDWAKE_PROP_RUNS=10000`) ;
+#   - le banc de mesures (`npx vite-node scripts/bench/bench.ts`), qui réécrit
+#     `docs/mesures.md` et `docs/mesures/bench.json` ;
+#   - la recette (`npx vite-node scripts/recette/recette.ts`), qui réécrit
+#     `docs/recette.md` et rejoue les quatorze points du cahier.
+# Les trois rapports partent en artefact : rien n'est commité depuis ici.
+#
+# BUDGET : ce job déclare `timeout-minutes: 30`, hors du plafond de 5 minutes
+# par job, et c'est assumé — il ne tourne JAMAIS sur une PR (`schedule` et
+# `workflow_dispatch` seulement). La règle des 5 minutes protège la boucle
+# PR → merge ; un passage de nuit de 20 minutes ne coûte rien à cette boucle.
+# Ne jamais y ajouter `pull_request`.
+#
+# Un « rouge » de recette ne casse pas la nuit : la recette rend son verdict
+# dans le résumé et dans l'artefact. Les propriétés, elles, sont la soupape :
+# si elles tombent, la nuit est rouge — c'est le signal qu'on veut voir.
+
+on:
+  schedule:
+    # Une fois par nuit, 02:17 UTC (~03:17 à Paris en hiver), heure creuse.
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+    inputs:
+      tirages:
+        description: "Tirages fast-check (défaut : 10000)"
+        required: false
+        default: "10000"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  nuit:
+    name: passage-de-nuit
+    runs-on: ubuntu-latest
+    # Hors budget de 5 min par construction : ce job ne court jamais en PR.
+    # 30 min couvrent 10 000 tirages (~20 s mesurées), le banc (~10 s) et la
+    # recette (~30 s) avec une marge pour un runner lent.
+    timeout-minutes: 30
+    steps:
+      - name: Checkout (superficiel)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Dépendances
+        run: npm ci --no-audit --no-fund
+
+      - name: Rapports (dossier de travail)
+        run: mkdir -p rapports
+
+      - name: Propriétés fast-check (10 000 tirages)
+        env:
+          TIRAGES: ${{ inputs.tirages || '10000' }}
+        run: |
+          set -o pipefail
+          CI=1 CARDWAKE_PROP_RUNS="$TIRAGES" npx vitest run --reporter=basic \
+            packages/agent/test/loop-adversary.test.ts \
+            packages/agent/test/properties-agent.test.ts \
+            packages/agent/test/properties-gateway.test.ts \
+            packages/lang/test/paraphrase.test.ts \
+            packages/lang/test/print.test.ts \
+            packages/lang/test/values-chunks.test.ts \
+            packages/model/test/ops-journal.test.ts \
+            packages/model/test/properties-authorize.test.ts \
+            packages/model/test/properties-dispatch.test.ts \
+            2>&1 | tee rapports/proprietes.log
+
+      - name: Banc de mesures
+        run: |
+          set -o pipefail
+          npx vite-node scripts/bench/bench.ts 2>&1 | tee rapports/banc.log
+
+      - name: Recette (verdict dans le résumé, jamais bloquante)
+        id: recette
+        env:
+          TIRAGES: ${{ inputs.tirages || '10000' }}
+        run: |
+          set -o pipefail
+          code=0
+          npx vite-node scripts/recette/recette.ts 2>&1 | tee rapports/recette.log || code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" -ne 0 ]; then
+            echo "::warning::recette rouge (code $code) — points en échec dans rapports/recette.log et dans l'artefact."
+          fi
+
+      - name: Résumé
+        if: always()
+        env:
+          TIRAGES: ${{ inputs.tirages || '10000' }}
+        run: |
+          {
+            echo "### Passage de nuit"
+            echo
+            echo "- tirages fast-check : $TIRAGES"
+            echo "- recette : code ${{ steps.recette.outputs.code }} (0 = tous les points obligatoires verts)"
+            if [ -f docs/mesures.md ]; then
+              echo
+              echo "#### Banc (extrait)"
+              echo '```'
+              grep -E "CAR-N-0" docs/mesures.md | head -8
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Artefacts (rapports de la nuit)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports-nuit-${{ github.run_number }}
+          path: |
+            rapports/
+            docs/mesures.md
+            docs/mesures/bench.json
+            docs/recette.md
+          if-no-files-found: warn
+          retention-days: 14
