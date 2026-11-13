@@ -17,6 +17,7 @@ export * from "./file";
 export * from "./migrate";
 export * from "./clone";
 export * from "./ops";
+export * from "./invariants";
 export * from "./journal";
 export * from "./host";
 export * from "./dispatch";
