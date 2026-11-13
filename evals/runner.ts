@@ -328,6 +328,21 @@ export function repairPhrase(task: EvalTask, failures: string[]): string {
   ].join("\n");
 }
 
+/**
+ * La demande de réparation quand le modèle n'a rien donné d'utilisable : on
+ * lui rend son propre verdict (contrôle statique refusé, sortie illisible),
+ * et on lui demande une fois de plus.
+ */
+export function rewritePhrase(task: EvalTask, reason: string): string {
+  return [
+    task.phrase,
+    "",
+    `The script you proposed could not be used: ${reason}`,
+    "",
+    "Write the script again, in the exact form the language reference describes.",
+  ].join("\n");
+}
+
 /** Le compte rendu d'une tâche : le verdict et ce qui a été dépensé. */
 function outcomeOf(
   task: EvalTask,
@@ -376,7 +391,20 @@ export async function runTask(task: EvalTask, options: RunnerOptions): Promise<T
   const target = targetOf(validated.stack, task.object);
   if (typeof target === "string") return failed(task, target);
   const first = await attemptTask(task, validated.stack, target, counted.gateway, options, task.phrase);
-  if ("reason" in first) return outcomeOf(task, first, counted, false, false, 1);
+  if ("reason" in first) {
+    // Pas de script du tout : le modèle retente une fois, en sachant ce que
+    // son propre answer avait fait rejeter.
+    const again = await attemptTask(
+      task,
+      validated.stack,
+      target,
+      counted.gateway,
+      options,
+      rewritePhrase(task, first.reason),
+    );
+    if ("reason" in again) return outcomeOf(task, again, counted, false, true, 2);
+    return outcomeOf(task, again, counted, false, true, 2);
+  }
   if (first.failures.length === 0) return outcomeOf(task, first, counted, true, false, 1);
   const repair = await attemptTask(
     task,
