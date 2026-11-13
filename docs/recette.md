@@ -1,14 +1,14 @@
 # Recette — verdict point par point
 
-Rejouée le **2026-11-13** sur le commit `6c5eb50d8b7d` (branche `feat/recette`).
+Rejouée le **2026-11-13** sur le commit `0fe8ca1db3b0` (branche `feat/recette-rapport`).
 
-Chaque point est **exécuté**, pas relu : le tableau recopie ce que la commande a constaté. 10 point(s) vert(s), 3 rouge(s), 1 hors périmètre — sur 14 point(s).
+Chaque point est **exécuté**, pas relu : le tableau recopie ce que la commande a constaté. 11 point(s) vert(s), 2 rouge(s), 1 hors périmètre — sur 14 point(s).
 
 ## Tableau des points
 
 | # | Point | Verdict | Résumé |
 |---|---|---|---|
-| 1 | Les 23 propriétés passent, graines consignées | **KO** | 1 propriété(s) sans identifiant dans les tests (CAR-P-09) |
+| 1 | Les 23 propriétés passent, graines consignées | **OK** | les 23 propriétés passent (0 échec) et les 23 identifiants sont couverts |
 | 2 | `cassette verify` : aucun enregistrement périmé | **KO** | 13 enregistrement(s) périmé(s), 0 manquant(s) |
 | 3 | Les trois piles en mode enregistré, sans requête réseau | **OK** | les trois piles se jouent en mode enregistré, sans requête réseau |
 | 4 | L'exemple 7.13 : transactions, appels, Mood, annulations | **KO** | Mood « alarmed » puis « nervous » ; l'état de départ est restauré ; écart(s) : appels : 4 au lieu de 3 ; transactions : 3 au lieu de 2 ; annulations : 3 au lieu de 2 |
@@ -20,23 +20,20 @@ Chaque point est **exécuté**, pas relu : le tableau recopie ce que la commande
 | 10 | Budget épuisé : la passerelle ne reçoit plus d'appel | **OK** | budget épuisé : plus aucun appel à la passerelle |
 | 11 | Export puis import : mêmes fichiers canoniques | **OK** | export puis import : même pile, mise en forme canonique identique |
 | 12 | Accessibilité des sept écrans et parcours P2 au clavier | **OK** | 17 test(s) d'accessibilité verts (sept écrans + parcours P2 au clavier) |
-| 13 | `/.kiro`, licence, README, adresse en ligne | **OK** | `.kiro`, README et l'adresse en ligne sont conformes ; LICENSE absent (à créer — hors de ce lot) |
+| 13 | `/.kiro`, licence, README, adresse en ligne | **OK** | `.kiro` non ignoré, licence, README et adresse en ligne présents |
 | 14 | Vidéo de moins de trois minutes | hors périmètre | vidéo exclue par le demandeur : aucun tournage ni montage dans ce lot |
 
 ## Détail par point
 
 ### 1. Les 23 propriétés passent, graines consignées
 
-**Verdict : KO** — 1 propriété(s) sans identifiant dans les tests (CAR-P-09)
+**Verdict : OK** — les 23 propriétés passent (0 échec) et les 23 identifiants sont couverts
 
 Commande : `CARDWAKE_PROP_RUNS=2000 npx vitest run packages --reporter=basic`
 
 ```text
 tests de propriétés : verts
-identifiants couverts : CAR-P-01, CAR-P-02, CAR-P-03, CAR-P-04, CAR-P-05, CAR-P-06, CAR-P-07, CAR-P-08, CAR-P-10, CAR-P-11, CAR-P-12, CAR-P-13, CAR-P-14, CAR-P-15, CAR-P-16, CAR-P-17, CAR-P-18, CAR-P-19, CAR-P-20, CAR-P-21, CAR-P-22, CAR-P-23
-identifiants absents des tests : CAR-P-09
-  CAR-P-09 : aucune occurrence dans un fichier *.test.ts
-  CAR-P-09 est pourtant approchée par packages/model/test/dispatch.test.ts (« hiérarchie des messages ») : le parcours cible→carte→fond→pile y est joué, mais ni `pass` ni une propriété fast-check sur le placement des handlers n'y figurent.
+identifiants couverts : CAR-P-01, CAR-P-02, CAR-P-03, CAR-P-04, CAR-P-05, CAR-P-06, CAR-P-07, CAR-P-08, CAR-P-09, CAR-P-10, CAR-P-11, CAR-P-12, CAR-P-13, CAR-P-14, CAR-P-15, CAR-P-16, CAR-P-17, CAR-P-18, CAR-P-19, CAR-P-20, CAR-P-21, CAR-P-22, CAR-P-23
 ```
 
 
@@ -180,7 +177,7 @@ document.write — injection HTML : 0
 Commande : `python3 scripts/guards/run_all.py`
 
 ```text
-garde : verte — gardes : 348 fichier(s) contrôlé(s), 0 problème
+garde : verte — gardes : 362 fichier(s) contrôlé(s), 0 problème
 HyperCard : 0
 HyperTalk : 0
 \bApple\b : 0
@@ -196,7 +193,7 @@ piles copiées dans le site construit : non
 Commande : `python3 scripts/guards/run_all.py`
 
 ```text
-garde « secrets » : verte — gardes : 348 fichier(s) contrôlé(s), 0 problème
+garde « secrets » : verte — gardes : 362 fichier(s) contrôlé(s), 0 problème
 ```
 
 
@@ -269,7 +266,7 @@ code de sortie 0 — 17 test(s) vert(s), 0 échec(s)
 
 ### 13. `/.kiro`, licence, README, adresse en ligne
 
-**Verdict : OK** — `.kiro`, README et l'adresse en ligne sont conformes ; LICENSE absent (à créer — hors de ce lot)
+**Verdict : OK** — `.kiro` non ignoré, licence, README et adresse en ligne présents
 
 Commande : `curl -s -o /dev/null -w "%{http_code}" https://tradoooo.github.io/cardwake/`
 
@@ -277,7 +274,7 @@ Commande : `curl -s -o /dev/null -w "%{http_code}" https://tradoooo.github.io/ca
 .kiro/ présent : oui
 .kiro/ ignoré par git : non
 .kiro/ suivi par git : oui (47 fichier(s))
-LICENSE à la racine : ABSENT — à créer (hors de ce lot)
+LICENSE à la racine : LICENSE
 README.md : présent
 GET https://tradoooo.github.io/cardwake/ → HTTP 200
 ```
