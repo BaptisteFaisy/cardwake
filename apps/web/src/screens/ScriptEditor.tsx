@@ -16,6 +16,8 @@
  */
 import { useId, useState } from "react";
 import type { Card, Part, Stack } from "@cardwake/model";
+import { demoDraftPhrases } from "@cardwake/agent";
+import { demoSlugFor } from "../data";
 import { planFor } from "../engine/model-access";
 import { findPart } from "../engine/ops";
 import { acceptDraft, proposeScript } from "../engine/script-editor";
@@ -34,6 +36,8 @@ type Editor = {
   draft: ScriptDraft | null;
   busy: boolean;
   note: string | null;
+  /** Les phrases enregistrées pour cet élément : des suggestions, pas des données. */
+  suggestions: string[];
   apply: () => void;
   propose: () => void;
   accept: () => void;
@@ -63,56 +67,106 @@ function askForDraft(props: ScriptEditorProps, phrase: string): Promise<ScriptDr
   });
 }
 
+/**
+ * Les phrases de brouillon enregistrées pour cet élément.
+ *
+ * Une suggestion n'a de sens que si le site joue en mode enregistré : elle
+ * promet une réponse déjà enregistrée. La liste vient des scénarios de
+ * démonstration (`@cardwake/agent`), jamais d'une table de données du site.
+ */
+function draftSuggestions(props: ScriptEditorProps): string[] {
+  const plan = planFor(props.stack);
+  if (plan.primary?.mode !== "cassette") return [];
+  const slug = demoSlugFor(props.stack);
+  if (slug === undefined) return [];
+  return demoDraftPhrases(slug, props.card.name, props.part.name);
+}
+
+/**
+ * Les gestes de l'éditeur : appliquer, demander un brouillon, l'accepter, le
+ * refuser. Ils sont ici à part du reste de l'état, pour que chaque fonction
+ * reste lisible — et pour qu'une seule d'entre elles touche au moteur.
+ */
+function useScriptActions(
+  props: ScriptEditorProps,
+  state: {
+    text: string;
+    phrase: string;
+    draft: ScriptDraft | null;
+    setText: (value: string) => void;
+    setPhrase: (value: string) => void;
+    setDraft: (value: ScriptDraft | null) => void;
+    setBusy: (value: boolean) => void;
+    setNote: (value: string | null) => void;
+  },
+): Pick<Editor, "apply" | "propose" | "accept" | "refuse"> {
+  const { engine, part } = props;
+
+  const apply = (): void => {
+    engine.setScript(part.id, state.text);
+    // L'avis ne ment pas : il ne dit « installé » que si la pile le porte
+    // vraiment (en mode Jouer, `authorizeOp` a refusé et le bandeau le dit).
+    state.setNote(installedNow(engine, part.id, state.text) ? t("build.scriptApplied") : null);
+  };
+
+  const propose = (): void => {
+    state.setBusy(true);
+    state.setNote(null);
+    void askForDraft(props, state.phrase)
+      .then((next) => {
+        state.setDraft(next);
+      })
+      .catch(() => {
+        // Panne imprévue : le brouillon est jeté, l'auteur n'est pas laissé
+        // devant un bouton qui ne répond plus.
+        state.setDraft(null);
+        state.setNote(t("build.draftFailedWhy", { why: t("build.draftFailedUnknown") }));
+      })
+      .finally(() => {
+        state.setBusy(false);
+      });
+  };
+
+  const accept = (): void => {
+    const draft = state.draft;
+    if (!acceptDraft(draft, (script) => engine.setScript(part.id, script))) return;
+    const script = draft?.script ?? "";
+    // Refusé par les droits (mode Jouer) : le brouillon reste, le bandeau parle.
+    if (!installedNow(engine, part.id, script)) return;
+    state.setText(script);
+    state.setDraft(null);
+    state.setNote(t("build.draftAccepted"));
+  };
+
+  const refuse = (): void => {
+    state.setDraft(null);
+    state.setNote(t("build.draftRefused"));
+  };
+
+  return { apply, propose, accept, refuse };
+}
+
 /** L'état de l'éditeur : un seul endroit qui touche au moteur, et quand. */
 function useScriptDraft(props: ScriptEditorProps): Editor {
-  const { engine, part } = props;
+  const { part } = props;
   const [text, setText] = useState(part.script);
   const [phrase, setPhrase] = useState("");
   const [draft, setDraft] = useState<ScriptDraft | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const actions = useScriptActions(props, { text, phrase, draft, setText, setPhrase, setDraft, setBusy, setNote });
 
-  const apply = (): void => {
-    engine.setScript(part.id, text);
-    // L'avis ne ment pas : il ne dit « installé » que si la pile le porte
-    // vraiment (en mode Jouer, `authorizeOp` a refusé et le bandeau le dit).
-    setNote(installedNow(engine, part.id, text) ? t("build.scriptApplied") : null);
+  return {
+    text,
+    setText,
+    phrase,
+    setPhrase,
+    draft,
+    busy,
+    note,
+    suggestions: draftSuggestions(props),
+    ...actions,
   };
-
-  const propose = (): void => {
-    setBusy(true);
-    setNote(null);
-    void askForDraft(props, phrase)
-      .then((next) => {
-        setDraft(next);
-      })
-      .catch(() => {
-        // Panne imprévue : le brouillon est jeté, l'auteur n'est pas laissé
-        // devant un bouton qui ne répond plus.
-        setDraft(null);
-        setNote(t("build.draftFailedWhy", { why: t("build.draftFailedUnknown") }));
-      })
-      .finally(() => {
-        setBusy(false);
-      });
-  };
-
-  const accept = (): void => {
-    if (!acceptDraft(draft, (script) => engine.setScript(part.id, script))) return;
-    const script = draft?.script ?? "";
-    // Refusé par les droits (mode Jouer) : le brouillon reste, le bandeau parle.
-    if (!installedNow(engine, part.id, script)) return;
-    setText(script);
-    setDraft(null);
-    setNote(t("build.draftAccepted"));
-  };
-
-  const refuse = (): void => {
-    setDraft(null);
-    setNote(t("build.draftRefused"));
-  };
-
-  return { text, setText, phrase, setPhrase, draft, busy, note, apply, propose, accept, refuse };
 }
 
 export function ScriptEditor(props: ScriptEditorProps): JSX.Element {
@@ -163,7 +217,31 @@ function PhraseRow({ editor }: { editor: Editor }): JSX.Element {
       >
         {t("build.scriptPropose")}
       </button>
+      <Suggestions phrases={editor.suggestions} onPick={editor.setPhrase} />
       {editor.busy ? <p role="status">{t("build.scriptWorking")}</p> : null}
+    </div>
+  );
+}
+
+/**
+ * Les phrases enregistrées pour cet élément : elles se cliquent et remplissent
+ * le champ. Sans elles, un juge taperait sa propre phrase et lirait « aucune
+ * réponse enregistrée » — la feature aurait l'air cassée.
+ */
+function Suggestions({ phrases, onPick }: { phrases: string[]; onPick: (phrase: string) => void }): JSX.Element | null {
+  if (phrases.length === 0) return null;
+  return (
+    <div className="draft-suggestions">
+      <p className="state-note">{t("build.draftSuggestion")}</p>
+      <ul>
+        {phrases.map((phrase) => (
+          <li key={phrase}>
+            <button type="button" onClick={() => onPick(phrase)}>
+              {phrase}
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

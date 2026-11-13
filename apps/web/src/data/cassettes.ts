@@ -12,7 +12,7 @@
 import { CassetteGateway } from "@cardwake/agent";
 import type { LlmGateway } from "@cardwake/agent";
 import type { CassetteEntry, Stack } from "@cardwake/model";
-import { DEMO_STACKS } from "./index";
+import { demoSlugFor } from "./index";
 import dashboardCassette from "../../../../stacks/dashboard/cassette.json";
 import manorCassette from "../../../../stacks/manor/cassette.json";
 import quotesCassette from "../../../../stacks/quotes/cassette.json";
@@ -68,7 +68,7 @@ export function cassetteGateway(slug: string): CassetteGateway | undefined {
 
 /** La passerelle enregistrée d'une pile ouverte : retrouvée par son nom. */
 export function cassetteForStack(stack: Stack): LlmGateway | null {
-  const demo = DEMO_STACKS.find((candidate) => candidate.stack.name === stack.name);
-  if (demo === undefined) return null;
-  return cassetteGateway(demo.slug) ?? null;
+  const slug = demoSlugFor(stack);
+  if (slug === undefined) return null;
+  return cassetteGateway(slug) ?? null;
 }
