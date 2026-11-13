@@ -115,6 +115,21 @@ describe("writeScript — la chaîne phrase → script", () => {
     expect(result.script).toBeUndefined();
   });
 
+  it("la réparation rappelle la pile réelle, pour corriger sans inventer", async () => {
+    // Sans le résumé, « Unknown part » ne dit pas quels noms existent : le
+    // modèle corrige alors en inventant un autre nom.
+    const model = new FakeModel({
+      responses: [
+        draftResponse({ script: BAD, summary: "", assumptions: [], questions: [] }),
+        draftResponse({ script: BAD_AGAIN, summary: "", assumptions: [], questions: [] }),
+      ],
+    });
+    await writeScript(REQUEST, model, optionsFor(orderStack()));
+    const repairText = textOfRequest(model.requests[1]);
+    expect(repairText).toContain("The stack, as it really is");
+    expect(repairText).toContain('field "Total"'); // un nom qui existe vraiment
+  });
+
   it("des questions du modèle remontent en status questions", async () => {
     const asked = ["Which field should receive the total?"];
     const model = new FakeModel({
@@ -158,5 +173,17 @@ describe("writeScript — la chaîne phrase → script", () => {
     expect(system).toContain('add 1 to field "Count"'); // un extrait caractéristique
     expect(system).toContain('button "Compute"'); // le résumé de la pile
     expect(system).toContain('card "Order"'); // l'objet visé
+  });
+
+  it("la carte d'une page est imprimée AVANT la référence complète", async () => {
+    const model = new FakeModel({ responses: [draftResponse(goodDraft())] });
+    await writeScript(REQUEST, model, optionsFor(orderStack()));
+    const system = model.requests[0].system;
+    const card = system.indexOf("# Murmur — the one-page card");
+    const full = system.indexOf("# The Murmur Language — Complete Reference");
+    expect(card).toBeGreaterThan(-1);
+    expect(card).toBeLessThan(full);
+    expect(system).toContain("repeat for each line"); // la recette des boucles
+    expect(system).toContain("consult agent with"); // la recette des agents
   });
 });
