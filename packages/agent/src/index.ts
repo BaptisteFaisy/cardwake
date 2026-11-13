@@ -8,6 +8,7 @@ export * from "./view";
 export * from "./tools";
 export * from "./budget";
 export * from "./cassette-recorder";
+export * from "./demo-scenarios";
 export * from "./loop";
 export * from "./queue";
 export * from "./write-script";

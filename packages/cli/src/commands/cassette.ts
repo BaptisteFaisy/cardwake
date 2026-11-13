@@ -11,9 +11,8 @@
  */
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { dirname, join } from "node:path";
-import * as agent from "@cardwake/agent";
-import { cassetteFrom } from "@cardwake/agent";
+import { basename, dirname, join } from "node:path";
+import { cassetteFrom, stackSituations } from "@cardwake/agent";
 import type { CassetteEntry } from "@cardwake/model";
 import { readStack, type CliArgs, type CliIO } from "../args";
 
@@ -50,17 +49,33 @@ function entrySize(entry: CassetteEntry): number {
   return new TextEncoder().encode(JSON.stringify(entry.response)).length;
 }
 
+/** Ce que la vérification sait des situations attendues d'une pile. */
+type Situations =
+  | { kind: "known"; fingerprints: string[] }
+  | { kind: "none" }
+  | { kind: "broken"; reason: string };
+
 /**
- * Situations attendues d'une pile. Le constructeur officiel arrive avec la
- * boucle d'agent (lot C8) : le branchement final tient à l'export de
- * `stackSituations` dans `@cardwake/agent`, déjà détecté ici.
+ * Les situations attendues d'une pile : on rejoue ses parcours de démonstration
+ * et on relève les requêtes que la boucle d'agent demande. Les empreintes
+ * demandées doivent être celles que la cassette porte.
+ *
+ * Trois issues, trois réponses honnêtes : une pile de démonstration se vérifie ;
+ * une pile qui n'a pas de parcours connu ne se vérifie pas, et le dit ;
+ * une pile dont les parcours ne se rejouent plus ne peut plus être certifiée,
+ * et le dit aussi (c'est le signal le plus fort qu'une cassette est périmée).
  */
-function expectedSituations(stackPath: string): string[] {
-  const builder = (agent as unknown as Record<string, unknown>).stackSituations;
+async function expectedSituations(stackPath: string): Promise<Situations> {
   const read = readStack(stackPath);
-  if (typeof builder !== "function" || !read.ok) return [];
-  const built = (builder as (stack: unknown) => unknown)(read.stack);
-  return Array.isArray(built) ? (built as string[]) : [];
+  if (!read.ok) return { kind: "none" };
+  try {
+    const fingerprints = await stackSituations(basename(dirname(stackPath)), read.stack);
+    if (fingerprints === null) return { kind: "none" };
+    return { kind: "known", fingerprints };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return { kind: "broken", reason };
+  }
 }
 
 /** Piles à vérifier : celles passées en argument, sinon `stacks/*` d'ici. */
@@ -96,7 +111,7 @@ export function cassetteList(args: CliArgs, io: CliIO): number {
   return 0;
 }
 
-export function cassetteVerify(args: CliArgs, io: CliIO): number {
+export async function cassetteVerify(args: CliArgs, io: CliIO): Promise<number> {
   const piles = pilesOf(args, io);
   if (piles === null) return 3;
   let problems = 0;
@@ -107,7 +122,17 @@ export function cassetteVerify(args: CliArgs, io: CliIO): number {
       problems += 1;
       continue;
     }
-    const verdict = cassetteFrom(read.entries).verify(expectedSituations(pile));
+    const situations = await expectedSituations(pile);
+    if (situations.kind === "none") {
+      io.out(`${pile}: no demo scenario for this stack — ${read.entries.length} recording(s), not checked`);
+      continue;
+    }
+    if (situations.kind === "broken") {
+      io.out(`${pile}: the demo flows no longer replay (${situations.reason}) — the recordings cannot be certified`);
+      problems += 1;
+      continue;
+    }
+    const verdict = cassetteFrom(read.entries).verify(situations.fingerprints);
     for (const fingerprint of verdict.stale) io.out(`${pile}: stale ${fingerprint}`);
     for (const fingerprint of verdict.missing) io.out(`${pile}: missing ${fingerprint}`);
     problems += verdict.stale.length + verdict.missing.length;
@@ -126,9 +151,9 @@ export function cassetteRecord(io: CliIO): number {
   return 2;
 }
 
-export function cassetteCommand(args: CliArgs, io: CliIO): number {
+export async function cassetteCommand(args: CliArgs, io: CliIO): Promise<number> {
   if (args.sub === "list") return cassetteList(args, io);
-  if (args.sub === "verify") return cassetteVerify(args, io);
+  if (args.sub === "verify") return await cassetteVerify(args, io);
   if (args.sub === "record") return cassetteRecord(io);
   io.err("cassette: needs a sub-command — list, verify or record");
   return 3;
