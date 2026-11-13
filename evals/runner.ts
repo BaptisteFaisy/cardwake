@@ -84,15 +84,32 @@ export type RunnerOptions = {
 // La cible et le résumé de la pile
 // --------------------------------------------------------------------------
 
-/** Retrouve l'objet désigné par `Carte/Partie` dans la pile. */
+/** Les éléments d'une carte : les siens, puis ceux de son fond. */
+function partsOfCard(stack: Stack, cardId: number): Part[] {
+  const card = stack.cards.find((item) => item.id === cardId);
+  const background = stack.backgrounds.find((item) => item.id === card?.background);
+  return [...(card?.parts ?? []), ...(background?.parts ?? [])];
+}
+
+/**
+ * Retrouve l'objet désigné par `Carte/Partie` dans la pile.
+ *
+ * Quand un champ et un bouton portent le même nom (les piles du jeu le font
+ * exprès : « Average », « Label », « Total »), c'est le **bouton** que la
+ * phrase désigne : la demande commence par « When … is clicked ». Choisir le
+ * champ installerait le script là où aucun clic ne le déclenche.
+ */
 export function targetOf(stack: Stack, object: string): Target | string {
   const [cardName, partName] = object.split("/");
   const card = findCard(stack, byName(cardName));
   if (!card) return `no card named "${cardName}"`;
   if (partName === undefined) return `the object "${object}" names no part`;
-  const found = findPart(stack, card.id, byName(partName));
-  if (!found) return `no part "${partName}" on card "${cardName}"`;
-  return { cardId: card.id, partId: found.part.id, kind: found.part.kind, name: found.part.name };
+  const matches = partsOfCard(stack, card.id).filter(
+    (part) => part.name.toLowerCase() === partName.toLowerCase(),
+  );
+  if (matches.length === 0) return `no part "${partName}" on card "${cardName}"`;
+  const part = matches.find((item) => item.kind === "button") ?? matches[0];
+  return { cardId: card.id, partId: part.id, kind: part.kind, name: part.name };
 }
 
 /** Un élément décrit en une ligne : nom, nature, texte. */
@@ -152,10 +169,9 @@ export function countGateway(inner: LlmGateway): CountedGateway {
 // L'installation du script
 // --------------------------------------------------------------------------
 
-/** Le script actuellement porté par l'objet visé. */
+/** Le script actuellement porté par l'objet visé (sur la carte ou son fond). */
 function scriptOf(stack: Stack, target: Target): string {
-  const card = stack.cards.find((item) => item.id === target.cardId);
-  const part = card?.parts.find((item) => item.id === target.partId);
+  const part = partsOfCard(stack, target.cardId).find((item) => item.id === target.partId);
   return part?.script ?? "";
 }
 
@@ -193,9 +209,16 @@ async function waitFor(engine: ModelEngineApi, action: () => void): Promise<void
   await Promise.race([done, new Promise((resolve) => setTimeout(resolve, 30_000))]);
 }
 
-/** L'élément d'une carte, par nom (insensible à la casse). */
-function partNamed(card: { parts: Part[] }, name: string): Part | undefined {
-  return card.parts.find((part) => part.name.toLowerCase() === name.toLowerCase());
+/**
+ * L'élément d'une carte, par nom et par nature. La nature compte : une pile
+ * de démonstration porte souvent un champ et un bouton du même nom
+ * (« Average », « Total ») ; cliquer le champ ne déclenche pas le script du
+ * bouton, et le jeu mesurerait alors le silence au lieu du modèle.
+ */
+function partNamed(card: { parts: Part[] }, name: string, kind?: "button" | "field"): Part | undefined {
+  const matches = card.parts.filter((part) => part.name.toLowerCase() === name.toLowerCase());
+  if (kind === undefined) return matches[0];
+  return matches.find((part) => part.kind === kind);
 }
 
 /** Les erreurs d'exécution que le moteur a rencontrées pendant une action. */
@@ -208,14 +231,18 @@ async function playEvent(engine: ModelEngineApi, event: EvalTask["events"][numbe
   const card = engine.currentCard();
   if (!card) return "no card is shown";
   if (event.click !== undefined) {
-    const part = partNamed(card, event.click);
+    const part = partNamed(card, event.click, "button") ?? partNamed(card, event.click);
     if (!part) return `no element named "${event.click}" on card "${card.name}"`;
+    if (part.kind !== "button") return `"${event.click}" is a ${part.kind}, not a button`;
+    // Un bouton sans script ne produit aucun changement : le moteur ne dit
+    // rien, et attendre serait mentir sur ce que le jeu mesure.
+    if (part.script.trim() === "") return `the button "${part.name}" carries no script`;
     await waitFor(engine, () => engine.click(part.id));
     return null;
   }
   if (event.type !== undefined) {
-    const part = partNamed(card, event.type.field);
-    if (!part || part.kind !== "field") return `no field named "${event.type.field}" on card "${card.name}"`;
+    const part = partNamed(card, event.type.field, "field");
+    if (!part) return `no field named "${event.type.field}" on card "${card.name}"`;
     engine.editField(part.id, event.type.text);
     return null;
   }
