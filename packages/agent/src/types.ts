@@ -60,6 +60,19 @@ export interface LlmGateway {
   readonly mode: "cassette" | "key" | "relay";
 }
 
+/**
+ * Le texte des blocs texte d'une réponse, dans l'ordre, sans séparateur.
+ *
+ * Une seule implémentation : la chaîne « phrase → script » et l'enregistreur
+ * des cassettes lisent la même sortie structurée, de la même façon.
+ */
+export function responseText(response: LlmResponse): string {
+  return response.blocks
+    .filter((block): block is Extract<LlmBlock, { type: "text" }> => block.type === "text")
+    .map((block) => block.text)
+    .join("");
+}
+
 /** Erreur propre au mode enregistré : aucune cassette pour cette empreinte. */
 export class CassetteMiss extends Error {
   readonly fingerprint: string;

@@ -13,6 +13,8 @@ export * from "./loop";
 export * from "./queue";
 export * from "./write-script";
 export * from "./script-prompt";
+export * from "./script-summary";
+export * from "./language-reference";
 export * from "./gateway/canon";
 export * from "./gateway/sha256";
 export * from "./gateway/cassette";
