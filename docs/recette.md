@@ -1,15 +1,15 @@
 # Recette — verdict point par point
 
-Rejouée le **2026-11-13** sur le commit `0fe8ca1db3b0` (branche `feat/recette-rapport`).
+Rejouée le **2026-11-13** sur le commit `9dc846032e33` (branche `docs/etat-final`).
 
-Chaque point est **exécuté**, pas relu : le tableau recopie ce que la commande a constaté. 11 point(s) vert(s), 2 rouge(s), 1 hors périmètre — sur 14 point(s).
+Chaque point est **exécuté**, pas relu : le tableau recopie ce que la commande a constaté. 12 point(s) vert(s), 1 rouge(s), 1 hors périmètre — sur 14 point(s).
 
 ## Tableau des points
 
 | # | Point | Verdict | Résumé |
 |---|---|---|---|
 | 1 | Les 23 propriétés passent, graines consignées | **OK** | les 23 propriétés passent (0 échec) et les 23 identifiants sont couverts |
-| 2 | `cassette verify` : aucun enregistrement périmé | **KO** | 13 enregistrement(s) périmé(s), 0 manquant(s) |
+| 2 | `cassette verify` : aucun enregistrement périmé | **OK** | aucun enregistrement périmé ni manquant |
 | 3 | Les trois piles en mode enregistré, sans requête réseau | **OK** | les trois piles se jouent en mode enregistré, sans requête réseau |
 | 4 | L'exemple 7.13 : transactions, appels, Mood, annulations | **KO** | Mood « alarmed » puis « nervous » ; l'état de départ est restauré ; écart(s) : appels : 4 au lieu de 3 ; transactions : 3 au lieu de 2 ; annulations : 3 au lieu de 2 |
 | 5 | Faux modèle adversaire : 10 000 séquences, zéro dépassement | **OK** | faux modèle adversaire : 10 000 tirages, aucun dépassement de droits |
@@ -39,25 +39,14 @@ identifiants couverts : CAR-P-01, CAR-P-02, CAR-P-03, CAR-P-04, CAR-P-05, CAR-P-
 
 ### 2. `cassette verify` : aucun enregistrement périmé
 
-**Verdict : KO** — 13 enregistrement(s) périmé(s), 0 manquant(s)
+**Verdict : OK** — aucun enregistrement périmé ni manquant
 
 Commande : `npx vite-node packages/cli/src/main.ts cassette verify`
 
 ```text
-stacks/dashboard/stack.json: stale 844082402c7ccaad827e0751b4138c011ac0d864050c20ed417908ebb8bfba9e
-stacks/manor/stack.json: stale 0ea0f3ee95066b3fff1a327a166c272649a431a6b6ef7da8b51fe5c0bcc65f11
-stacks/manor/stack.json: stale 21e0b92ac4813d713fd86dc57218d10fa74393d82412db52d33662710eac5e80
-stacks/manor/stack.json: stale 2d1557b23b3d48e6e57a97668177fcd0612ba66a3ee2760f47a3688bb523098e
-stacks/manor/stack.json: stale 71c53d5849b860cc9743bca102687b203ad431aeefeb990b593fa0a81524c187
-stacks/manor/stack.json: stale a1e3a50c7de9d84928f8a2caa205824ce64a65abfe5423b88f2e23a17a1a25c6
-stacks/manor/stack.json: stale abd94fe3149dd1463bffba3d64975c0fd7c971358584e93cd95a26f374af58e4
-stacks/manor/stack.json: stale ccfa35d14ede2497c84af5c18209b6f0f0ca2d41e01dc82bcc6890ef6a1da05e
-stacks/manor/stack.json: stale da31d337e4d514010d2ea28630e529d3376332258b24b80397ca0d7438f098a9
-stacks/manor/stack.json: stale e47a3f59712574efd8cf4a5c235b32ef89f4703ba6938c6eb1eefe9b02c72efd
-stacks/manor/stack.json: stale ee4b8dc7e6dfbfe0b6278a1322be9c2c4b9ed5568534e79bf45cf502aaee4d44
-stacks/quotes/stack.json: stale 3573185cec9330c96f109b2327b8112203fe9b582004e8eec5ced58364e44c7c
-stacks/quotes/stack.json: stale 72dbec760839c51b34660ec2e23ef1b5bcf9612107b0f491ad7691f72faa0737
-diagnostic : `stackSituations` n'est pas exporté par @cardwake/agent : la liste des situations attendues est vide, donc tout enregistrement est vu comme périmé
+stacks/dashboard/stack.json: 1 recording(s), all up to date
+stacks/manor/stack.json: 10 recording(s), all up to date
+stacks/quotes/stack.json: 2 recording(s), all up to date
 ```
 
 
@@ -177,7 +166,7 @@ document.write — injection HTML : 0
 Commande : `python3 scripts/guards/run_all.py`
 
 ```text
-garde : verte — gardes : 362 fichier(s) contrôlé(s), 0 problème
+garde : verte — gardes : 368 fichier(s) contrôlé(s), 0 problème
 HyperCard : 0
 HyperTalk : 0
 \bApple\b : 0
@@ -193,7 +182,7 @@ piles copiées dans le site construit : non
 Commande : `python3 scripts/guards/run_all.py`
 
 ```text
-garde « secrets » : verte — gardes : 362 fichier(s) contrôlé(s), 0 problème
+garde « secrets » : verte — gardes : 368 fichier(s) contrôlé(s), 0 problème
 ```
 
 

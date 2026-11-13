@@ -121,3 +121,18 @@ une seule forme.
   cassettes périmés, et `CAR-P-09` sans identifiant dans les tests (corrigé
   depuis).
 - **Licence** : MIT, `LICENSE` à la racine (les paquets la déclaraient déjà).
+- **L'éditeur de phrase, dans l'écran.** Le site annonçait une phrase qui
+  produit un brouillon ; l'écran ne montrait qu'un `readOnly` marqué « not
+  wired ». C'est fait : `setScript` au moteur (autorisé, journalisé, refusé en
+  mode Jouer), un onglet Script qui édite, un brouillon avec relecture en
+  clair, essai à blanc et diff, et **rien ne s'installe sans Accept**.
+- **`cassette verify` vérifie enfin quelque chose.** Il déclarait les treize
+  enregistrements périmés depuis toujours : la liste des situations attendues
+  était vide faute de constructeur. Les scénarios sont passés dans le paquet
+  `agent`, `stackSituations` rejoue les parcours et relève les requêtes
+  demandées ; les cassettes des trois piles sont à jour (elles l'étaient déjà :
+  c'est l'outil qui mentait).
+- **Un écart au cahier, dit tel quel.** L'exemple 7.13 attend deux transactions
+  et trois appels ; l'implémentation en donne trois et quatre, parce que chaque
+  tour d'agent est sa propre transaction et que l'agent est rappelé après ses
+  appels d'outils. Le comportement observé est celui du cahier.

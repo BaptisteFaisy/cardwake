@@ -67,17 +67,22 @@ Les trois premières PR sont passées par la file et ont été mergées sans cli
 
 | Lot | État | Où |
 |---|---|---|
-| Éditeur de script + phrase → script dans l'écran | **en cours** — la chaîne existe (CLI, jeu d'évaluation) mais l'onglet Script du constructeur est encore en lecture seule | `apps/web/src/screens/CardBuild.tsx` |
-| Passe d'accessibilité au lecteur d'écran | à faire — le contrôle automatique existe | `apps/web/test/a11y.test.ts` |
+| Passe d'accessibilité au lecteur d'écran | à faire — le contrôle automatique existe (axe-core, WCAG 2.2 AA, parcours clavier) et a déjà trouvé un défaut corrigé | `apps/web/test/a11y.test.ts` |
 | Seconde cible du jeu d'évaluation (≥ 95 % après réparation) | non mesurée séparément : la chaîne répare une fois dans la tâche, la tâche est comptée une fois | `evals/runner.ts` |
+| Exemple 7.13 : trois transactions et quatre appels au lieu de deux et trois | **écart documenté**, pas un défaut : chaque tour d'agent est sa propre transaction, et l'agent est rappelé après ses appels d'outils. Le comportement observé est celui du cahier (`alarmed`, puis `nervous`, état de départ restauré) | `docs/recette.md` |
 | Vidéo de trois minutes | hors périmètre (exclue par le demandeur) ; le script est livré | `docs/video-script.md` |
-| Cassettes des piles de démonstration | **périmées** (13 enregistrements) : à réenregistrer avant la démonstration | `stacks/*/cassette.json` |
 
 Ce qui est livré depuis la première session : le pont `host.ts` et le
 `Dispatcher`, la boucle d'agent, la chaîne phrase → script, les cassettes, la CLI
-complète, le serveur MCP, le relais local, le lanceur du jeu d'évaluation (85 %
-au premier coup sur 40 tâches), le banc de performance (toutes les cibles
-atteintes) et la recette automatisée.
+complète, le serveur MCP, le relais local, **l'éditeur de script et de phrase
+dans l'écran** (brouillon, relecture en clair, essai à blanc, diff, Accept ou
+Refus), le lanceur du jeu d'évaluation (85 % au premier coup sur 40 tâches), le
+banc de performance (toutes les cibles atteintes) et la recette automatisée
+(point par point, rejouable).
+
+Les cassettes ne sont plus « périmées » : `cassette verify` compare enfin les
+empreintes enregistrées aux situations que les parcours de démonstration
+demandent aujourd'hui.
 
 ## 4. Reprendre le travail
 
