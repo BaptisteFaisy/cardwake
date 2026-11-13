@@ -37,16 +37,17 @@ describe("resolveObject", () => {
 });
 
 describe("paraphraseCommand", () => {
-  it("prints the reading of Guard/Show the amulet, with the fallback notice", () => {
+  it("prints the reading of Guard/Show the amulet", () => {
     const captured = capture();
     const code = paraphraseCommand(cliArgs({ command: "paraphrase", positionals: [MANOR], object: "Guard/Show the amulet" }), captured.io);
     expect(code).toBe(0);
     const text = captured.out.join("\n");
-    // Le module de relecture est écrit en parallèle : tant qu'il manque, la CLI
-    // imprime l'avertissement prévu et le texte normalisé.
-    expect(text).toContain("-- paraphrase module not available yet, printed the normalized script --");
-    expect(text).toContain("consult agent");
-    expect(text).toContain('field "Says"');
+    // Le module de relecture est livré : la CLI rend la lecture en clair, pas
+    // le script normalisé.
+    expect(text).not.toContain("paraphrase unavailable");
+    expect(text).toContain("Ask this card's agent");
+    expect(text).toContain("The visitor shows you a silver amulet.");
+    expect(text).toContain("field Says");
   });
 
   it("says when the script is empty", () => {
