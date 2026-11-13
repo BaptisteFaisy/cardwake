@@ -79,7 +79,14 @@ table.settings-table td {
   }
 }
 
+/* Mouvement réduit (12.4) : plus d'animation, plus de transition, plus de
+   défilement doux. La flamme reste allumée mais immobile, l'entrée du
+   journal apparaît d'un coup, l'encre change de couleur sans fondu. */
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
   *,
   *::before,
   *::after {

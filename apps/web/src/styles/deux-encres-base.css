@@ -1,10 +1,12 @@
 :root {
   --paper: #f7f5ef;
   --ink: #1a1a18;
-  --ink-soft: #4a4740; /* 7,6:1 sur papier : textes secondaires */
-  --accent: #8a3d0a; /* 7:1 sur papier : ce qui vient d'un agent */
-  --rule: #c9c4b6;
-  --focus: #1f4f8a;
+  --ink-soft: #4a4740; /* 8,50:1 sur papier : textes secondaires */
+  --accent: #8a3d0a; /* 7,00:1 sur papier : ce qui vient d'un agent */
+  /* La règle d'une section ou d'une entrée de liste : elle borne un composant
+     (WCAG 1.4.11), donc 3:1 au moins sur le fond le plus clair. */
+  --rule: #8f8a7d; /* 3,39:1 sur #fffdf8, 3,16:1 sur le papier */
+  --focus: #1f4f8a; /* 7,57:1 sur papier : le contour de focus */
   --font-title: ui-rounded, "Trebuchet MS", system-ui, sans-serif;
   --font-read: system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", monospace;
@@ -12,6 +14,11 @@
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  /* Le défilement doux est coupé par `prefers-reduced-motion` (12.4). */
+  scroll-behavior: smooth;
 }
 
 html,
@@ -65,6 +72,8 @@ textarea {
   font-family: var(--font-read);
 }
 
+/* Le focus est visible partout : contour de 3 px, à 2 px du bord, donc posé
+   sur la surface qui accueille l'élément (WCAG 2.4.7, 1.4.11). */
 :is(button, input, textarea, select, a, [tabindex]):focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
