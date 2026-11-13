@@ -1,0 +1,29 @@
+{
+  "backgrounds": [],
+  "cards": [],
+  "currentCardId": null,
+  "format": "cardwake/0",
+  "name": "Une pile d'une version que ce build ne connaît pas",
+  "nextId": 1,
+  "persona": "",
+  "provenance": {
+    "kind": "created"
+  },
+  "script": "",
+  "settings": {
+    "agentInputTokensPerSession": 400000,
+    "agentMaxIterations": 6,
+    "agentMaxOutputTokens": 2000,
+    "agentQueueLength": 20,
+    "agentTimeoutMs": 30000,
+    "agentTurnsPerAction": 8,
+    "agentTurnsPerSession": 60,
+    "cardViewChars": 8000,
+    "fieldViewChars": 2000,
+    "hopBudget": 3,
+    "maxMessageDepth": 50,
+    "maxSteps": 100000,
+    "maxWaitMs": 5000,
+    "tickSeconds": 0
+  }
+}

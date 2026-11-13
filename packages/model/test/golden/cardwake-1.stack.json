@@ -1,0 +1,141 @@
+{
+  "backgrounds": [
+    {
+      "id": 1,
+      "name": "Character",
+      "parts": [
+        {
+          "id": 2,
+          "kind": "field",
+          "locked": false,
+          "multiline": false,
+          "name": "Mood",
+          "rect": [
+            16,
+            40,
+            240,
+            24
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "id": 3,
+          "kind": "field",
+          "locked": true,
+          "multiline": false,
+          "name": "Says",
+          "rect": [
+            16,
+            72,
+            240,
+            24
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        }
+      ],
+      "persona": "",
+      "script": ""
+    }
+  ],
+  "cards": [
+    {
+      "agent": {
+        "awake": true,
+        "level": 3,
+        "persona": "Tu gardes la porte.",
+        "speed": "fast"
+      },
+      "background": 1,
+      "content": {
+        "2": "",
+        "3": ""
+      },
+      "id": 4,
+      "ink": {
+        "5": 1
+      },
+      "name": "Guard",
+      "parts": [
+        {
+          "id": 5,
+          "kind": "field",
+          "locked": false,
+          "multiline": false,
+          "name": "Notes",
+          "rect": [
+            16,
+            40,
+            240,
+            24
+          ],
+          "script": "",
+          "style": "plain",
+          "text": "",
+          "visible": true
+        },
+        {
+          "enabled": true,
+          "hilite": false,
+          "id": 6,
+          "kind": "button",
+          "label": "Go",
+          "name": "Go",
+          "rect": [
+            16,
+            72,
+            240,
+            24
+          ],
+          "script": "",
+          "style": "plain",
+          "visible": true
+        }
+      ],
+      "script": ""
+    },
+    {
+      "agent": null,
+      "background": 1,
+      "content": {
+        "2": "",
+        "3": ""
+      },
+      "id": 7,
+      "ink": {},
+      "name": "Visitor",
+      "parts": [],
+      "script": ""
+    }
+  ],
+  "currentCardId": 4,
+  "format": "cardwake/1",
+  "name": "Doré",
+  "nextId": 8,
+  "persona": "Les agents observent, les scripts agissent.",
+  "provenance": {
+    "kind": "created"
+  },
+  "script": "on openStack\n  put \"bienvenue\" into field \"Notes\" of card id 4\nend openStack\n",
+  "settings": {
+    "agentInputTokensPerSession": 400000,
+    "agentMaxIterations": 6,
+    "agentMaxOutputTokens": 2000,
+    "agentQueueLength": 20,
+    "agentTimeoutMs": 30000,
+    "agentTurnsPerAction": 8,
+    "agentTurnsPerSession": 60,
+    "cardViewChars": 8000,
+    "fieldViewChars": 2000,
+    "hopBudget": 2,
+    "maxMessageDepth": 50,
+    "maxSteps": 100000,
+    "maxWaitMs": 5000,
+    "tickSeconds": 0
+  }
+}
