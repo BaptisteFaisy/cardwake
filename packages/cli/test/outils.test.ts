@@ -36,14 +36,14 @@ describe("new", () => {
     expect(written.name).toBe("first");
   });
 
-  it("refuses to overwrite a file, unless --force", () => {
+  it("refuses to overwrite a file, unless --overwrite", () => {
     const path = join(tempDir(), "taken.json");
     writeFileSync(path, "keep me");
     const captured = capture();
     expect(newCommand(cliArgs({ command: "new", positionals: [path] }), captured.io)).toBe(1);
     expect(readFileSync(path, "utf8")).toBe("keep me");
     expect(captured.err.join("\n")).toContain("already exists");
-    expect(newCommand(cliArgs({ command: "new", positionals: [path], force: true }), captured.io)).toBe(0);
+    expect(newCommand(cliArgs({ command: "new", positionals: [path], overwrite: true }), captured.io)).toBe(0);
     expect(readFileSync(path, "utf8")).not.toBe("keep me");
   });
 

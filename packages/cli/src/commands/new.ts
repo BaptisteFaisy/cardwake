@@ -3,7 +3,7 @@
  *
  * Le fichier produit passe `validate` tel quel : une carte, un champ, un
  * bouton qui répond. Rien de plus — l'auteur remplit ensuite. Deux refus
- * explicites : le fichier existe déjà (sauf `--force`), et la pile fabriquée
+ * explicites : le fichier existe déjà (sauf `--overwrite`), et la pile fabriquée
  * ne se relit pas (ce serait un bogue de la fabrique, pas de l'auteur).
  */
 
@@ -51,8 +51,8 @@ export function newCommand(args: CliArgs, io: CliIO): number {
     io.err("new: needs the path of the stack file to create");
     return 3;
   }
-  if (existsSync(path) && !args.force) {
-    io.err(`new: ${path} already exists — choose another name, or pass --force to replace it`);
+  if (existsSync(path) && !args.overwrite) {
+    io.err(`new: ${path} already exists — choose another name, or pass --overwrite to replace it`);
     return 1;
   }
   const stack = emptyStack(stackNameOf(path));

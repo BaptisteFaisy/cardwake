@@ -39,7 +39,7 @@ export type CliArgs = {
   json: boolean;
   help: boolean;
   /** Écrase un fichier existant (`new`). */
-  force: boolean;
+  overwrite: boolean;
   /** Confirme un geste qui coûte de l'argent (`cassette record`). */
   yes: boolean;
   /** Ouvre le navigateur (`serve`). */
@@ -64,7 +64,7 @@ export function usage(): string {
     "  cardwake validate <stack>           check a stack file and every script it holds",
     "  cardwake paraphrase <stack> --object <Card/Part>   read a script in plain words",
     "  cardwake explain script <stack> --object <Card/Part>   read a script line by line",
-    "  cardwake new <file> [--force]       create an empty stack (one card, one field, one button)",
+    "  cardwake new <file> [--overwrite]       create an empty stack (one card, one field, one button)",
     "  cardwake cassette list <stack>      show the recorded answers of a stack",
     "  cardwake cassette verify [stack...] list the recordings that no longer match",
     "  cardwake cassette record <stack> --relay <url> --yes [--max-calls n]   record the missing answers through the relay",
@@ -74,7 +74,7 @@ export function usage(): string {
     "  cardwake doctor [--relay <url>]     check stacks, cassettes, docs and guards (offline)",
     "  cardwake mcp                             start the project's MCP server (developer tool)",
     "",
-    "Options: --click <Card/Button>  --object <Card/Part>  --card <Name>  --say <text>  --relay <url>  --seed <n>  --port <n>  --max-calls <n>  --force  --yes  --open  --json  -h|--help",
+    "Options: --click <Card/Button>  --object <Card/Part>  --card <Name>  --say <text>  --relay <url>  --seed <n>  --port <n>  --max-calls <n>  --overwrite  --yes  --open  --json  -h|--help",
     "Exit codes: 0 success, 1 invalid stack, 2 not available, 3 wrong usage.",
   ].join("\n");
 }
@@ -95,9 +95,9 @@ function parseBounded(raw: string, min: number, max: number): number | null {
 const VALUED_OPTIONS = ["--click", "--object", "--seed", "--card", "--say", "--relay", "--port", "--max-calls"];
 
 /** Les options qui n'ont pas de valeur : leur présence suffit. */
-const FLAGS: Record<string, "help" | "json" | "force" | "yes" | "open"> = {
+const FLAGS: Record<string, "help" | "json" | "overwrite" | "yes" | "open"> = {
   "--help": "help", "-h": "help", "--json": "json",
-  "--force": "force", "--yes": "yes", "--open": "open",
+  "--overwrite": "overwrite", "--yes": "yes", "--open": "open",
 };
 
 
@@ -154,7 +154,7 @@ export function parseArgs(argv: readonly string[]): ParseResult {
   const args: CliArgs = {
     command: "", sub: null, positionals: [],
     click: null, object: null, card: null, say: null, relay: null, seed: null,
-    json: false, help: false, force: false, yes: false, open: false, port: null, maxCalls: null,
+    json: false, help: false, overwrite: false, yes: false, open: false, port: null, maxCalls: null,
   };
   const rest = [...argv];
   while (rest.length > 0) {
