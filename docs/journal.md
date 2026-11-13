@@ -90,3 +90,34 @@ cas limites, et déjà écrite en exigences.
 `tool_input` d'un hook : `lib.mjs` accepte `command`, `cmd`, `shell` et
 `input.command`, à confirmer sur un premier déclenchement réel puis à réduire à
 une seule forme.
+
+## 13 novembre 2026 — relecture, mesures, recette
+
+- **Relecture en clair réparée.** `cardwake paraphrase` annonçait que le module
+  de relecture n'était pas livré : la commande lui passait l'arbre syntaxique au
+  lieu de la source du script. Le `catch` avalait l'échec, la commande
+  retombait sur le texte normalisé. Corrigé, et vérifié sur la pile du manoir.
+- **Lanceur du jeu d'évaluation** (`evals/runner.ts`, `evals/run.ts`) : la
+  phrase part au modèle, le script est contrôlé, relu et essayé à blanc, installé
+  par `authorize`, joué par le vrai moteur du site, puis la pile finale est
+  jugée. **Mesure du 13/11, modèle `combo/cheap` : 34/40 tâches réussies au
+  premier coup — 85 %** (cible du cahier : ≥ 85 %), 54 appels, 269 385 jetons
+  d'entrée, 30 781 de sortie, ≈ 20 min. Rapport : `docs/mesures/eval.md` et
+  `docs/mesures/eval.json`.
+- **Le banc a menti une fois.** Premier passage : 70 %. Huit « échecs » étaient
+  des défauts du lanceur — les piles portent un champ et un bouton du même nom,
+  le script était installé sur le champ puis le clic tombait dessus. Le même
+  modèle passe à 85 % après correction du lanceur seul.
+- **Deux propriétés de plus, dont la dernière.** `CAR-P-09` (la hiérarchie) est
+  désormais une propriété fast-check sur les 16 placements de handlers × 16
+  choix de `pass` : les 23 identifiants du cahier apparaissent dans un test.
+- **Mesures de performance** (`docs/mesures.md`) : changement de carte 0,004 ms
+  (cible 50 ms), ouverture d'une pile de 100 cartes 1,10 ms (cible 1 s), analyse
+  d'un script de 200 lignes 0,52 ms (cible 20 ms), 723 686 étapes
+  d'interprétation par seconde (cible 200 000), événement → indication visible
+  0,05 ms (cible 100 ms).
+- **Recette automatisée** (`scripts/recette/`) : chaque point du cahier est
+  exécuté, pas relu. Elle a trouvé deux vrais défauts : 13 enregistrements de
+  cassettes périmés, et `CAR-P-09` sans identifiant dans les tests (corrigé
+  depuis).
+- **Licence** : MIT, `LICENSE` à la racine (les paquets la déclaraient déjà).
