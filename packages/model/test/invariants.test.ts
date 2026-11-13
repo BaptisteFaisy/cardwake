@@ -120,7 +120,14 @@ export function materialize(stack: Stack, intent: Intent, tag: number): Op | nul
     case "deleteCard": {
       // La carte affichée reste en vie : sa suppression est une divergence
       // connue (D1 de `rights-divergences.test.ts`), pas un invariant.
-      const victim = stack.cards.find((item) => item.id !== stack.currentCardId);
+      //
+      // « La carte affichée » veut dire celle que le reste du générateur
+      // traite comme affichée — celle que `displayed` rend. Après un
+      // `navigate` vers le néant, `currentCardId` est `null` et le
+      // générateur ne pouvait plus l'exclure : il supprimait alors la carte
+      // qu'il venait de désigner, et la pile sortait de la lecture (D1).
+      const shown = displayed(stack);
+      const victim = stack.cards.find((item) => item.id !== shown.id);
       return victim === undefined ? null : { kind: "deleteCard", card: victim, index: 1 };
     }
     case "moveCard":
