@@ -1,6 +1,6 @@
 # Recette — verdict point par point
 
-Rejouée le **2026-11-13** sur le commit `9dc846032e33` (branche `docs/etat-final`).
+Rejouée le **2026-11-13** sur le commit `83fd7481caff` (branche `main`).
 
 Chaque point est **exécuté**, pas relu : le tableau recopie ce que la commande a constaté. 12 point(s) vert(s), 1 rouge(s), 1 hors périmètre — sur 14 point(s).
 
@@ -45,8 +45,8 @@ Commande : `npx vite-node packages/cli/src/main.ts cassette verify`
 
 ```text
 stacks/dashboard/stack.json: 1 recording(s), all up to date
-stacks/manor/stack.json: 10 recording(s), all up to date
-stacks/quotes/stack.json: 2 recording(s), all up to date
+stacks/manor/stack.json: 11 recording(s), all up to date
+stacks/quotes/stack.json: 3 recording(s), all up to date
 ```
 
 
@@ -69,8 +69,8 @@ cardwake run dashboard --click "Week/Summarise my week" → code 0
     click on button "Summarise my week" of card "Week" (seed 1) — 2 operation(s)
       write into part 14 of card 10: "" becomes "The card did not answer."
       write into part 15 of card 10: "" becomes "1/1/70"
-rejeu enregistré manor → 4 réponse(s) : Let the master see it, then. The key stays where it sleeps. | The silver key opens the pantry, and the pantry keeps its own secrets. | Nobody is expected on a night like this. Give a name the house remembers. | Bread for
-rejeu enregistré quotes → 2 réponse(s) : Dear Mr Dupont, thank you for your request. I will confirm the tap replacement and pipe joint prices tomorrow morning. | Dear Mr Martin, thank you for your enquiry. I will confirm the boiler service price tomorrow mornin
+rejeu enregistré manor → 5 réponse(s) : {"script":"on mouseUp\n  put \"A visitor showed a silver amulet.\" after field \"Memory\"\n  put \"alarmed\" into field \"Mood\"\nend mouseUp\n","summary":"When the button is clicked, appends the sentence to the Memory f
+rejeu enregistré quotes → 3 réponse(s) : {"script":"on mouseUp\n  put \"Thank you for your request; we will confirm the prices tomorrow morning.\" into field \"Follow-up\"\nend mouseUp\n","summary":"When the Draft button is clicked, the Follow-up field is set t
 rejeu enregistré dashboard → 1 réponse(s) : On Monday you made two calls and finished one repair. Wednesday brought a late delivery from the supplier. Friday went to paperwork.
 imports réseau (node:http/https/net/tls/dgram) dans packages/lang, packages/model et packages/agent : aucun
 accès réseau direct hors mode enregistré (2), jamais instanciés au rejeu :
@@ -166,7 +166,7 @@ document.write — injection HTML : 0
 Commande : `python3 scripts/guards/run_all.py`
 
 ```text
-garde : verte — gardes : 368 fichier(s) contrôlé(s), 0 problème
+garde : verte — gardes : 373 fichier(s) contrôlé(s), 0 problème
 HyperCard : 0
 HyperTalk : 0
 \bApple\b : 0
@@ -182,7 +182,7 @@ piles copiées dans le site construit : non
 Commande : `python3 scripts/guards/run_all.py`
 
 ```text
-garde « secrets » : verte — gardes : 368 fichier(s) contrôlé(s), 0 problème
+garde « secrets » : verte — gardes : 373 fichier(s) contrôlé(s), 0 problème
 ```
 
 
