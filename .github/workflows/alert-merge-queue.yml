@@ -1,0 +1,78 @@
+name: alert-merge-queue
+
+# Alerte « file de merge bloquée ».
+#
+# Une PR `open` peut rester bloquée des heures sans que rien ne le dise : un
+# check requis (`ci`, `ci-budget`, `couche0`) reste `pending` ou n'est jamais
+# lancé, l'état de fusion vaut `BLOCKED`/`UNKNOWN`, et la file de merge
+# — qui ne prend que des PR vertes — attend en silence.
+#
+# Toutes les 10 minutes, ce workflow lit les PR ouvertes du dépôt, mesure
+# depuis quand chacune est bloquée (>= 10 min), et le dit :
+#   - un commentaire unique par PR, identifié par une marque invisible et
+#     **mis à jour sur place** (jamais un commentaire par passage) ;
+#   - une ligne dans le résumé du job, plus une annotation `warning` au-delà
+#     d'une heure (c'est le seuil où l'on parle de panne, pas d'attente).
+#
+# Bornes volontaires : il ne relance aucun job, ne modifie aucune branche, ne
+# touche à aucun fichier de garde, et ne commente que les PR du dépôt du run
+# (le script prend `GITHUB_REPOSITORY`, aucun autre dépôt n'est atteignable).
+# Lecture seule côté code, écriture limitée aux commentaires de PR.
+#
+# `GITHUB_TOKEN` en lecture/écriture de PR suffit : aucun PAT, aucun secret.
+# Budget : 5 minutes (règle user du budget CI, relevé antérieur, hors de cet
+# arbre) — le passage dure quelques secondes.
+
+on:
+  schedule:
+    # Toutes les 10 minutes. GitHub retarde parfois le cron de quelques
+    # minutes sous charge : c'est une alerte, pas un ordonnanceur temps réel.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      seuil:
+        description: "Minutes de blocage avant alerte"
+        required: false
+        default: "10"
+        type: string
+      dry_run:
+        description: "Essai à blanc (n'écrit aucun commentaire)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: read
+
+concurrency:
+  group: alert-merge-queue
+  cancel-in-progress: false
+
+jobs:
+  alerte:
+    name: alerte
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout (superficiel)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Détecter les PR bloquées et le dire
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SEUIL: ${{ inputs.seuil || '10' }}
+          SEC: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          set -uo pipefail
+          python3 scripts/infra/alert_merge_queue.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --seuil "$SEUIL" \
+            --verbeux \
+            ${SEC}
