@@ -33,6 +33,7 @@ export const IDS = {
   ownLockedField: 12,
   otherCard: 20,
   otherField: 51,
+  foreignField: 52,
   background: 2,
   backgroundField: 3,
   backgroundLockedField: 4,
@@ -76,29 +77,33 @@ function makeCard(spec: {
   };
 }
 
+/** Les deux fonds du banc : celui de l'agent, et celui du voisin. */
+function makeBackgrounds(): Background[] {
+  return [
+    {
+      id: IDS.background,
+      name: "Character",
+      persona: "Write what you learn in field Mood.",
+      script: "",
+      parts: [makeField(IDS.backgroundField, "Mood"), makeField(IDS.backgroundLockedField, "Says", true)],
+    },
+    {
+      id: IDS.foreignBackground,
+      name: "Elsewhere",
+      persona: "",
+      script: "",
+      parts: [makeField(IDS.foreignField, "Elsewhere Mood")],
+    },
+  ];
+}
+
 /** Pile de référence : une carte d'agent, un fond, une carte voisine. */
 export function buildStack(spec: {
   level: AgentLevel;
   awake: boolean;
   provenance: Provenance;
 }): Stack {
-  const background: Background = {
-    id: IDS.background,
-    name: "Character",
-    persona: "Write what you learn in field Mood.",
-    script: "",
-    parts: [
-      makeField(IDS.backgroundField, "Mood"),
-      makeField(IDS.backgroundLockedField, "Says", true),
-    ],
-  };
-  const foreign: Background = {
-    id: IDS.foreignBackground,
-    name: "Elsewhere",
-    persona: "",
-    script: "",
-    parts: [makeField(IDS.otherField, "Theirs")],
-  };
+  const [background, foreign] = makeBackgrounds();
   const agentCard = makeCard({
     id: IDS.agentCard,
     name: "Guard",
