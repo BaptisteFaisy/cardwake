@@ -25,9 +25,17 @@ name: alert-merge-queue
 
 on:
   schedule:
-    # Toutes les 10 minutes. GitHub retarde parfois le cron de quelques
-    # minutes sous charge : c'est une alerte, pas un ordonnanceur temps réel.
+    # Toutes les 10 minutes. Sur ce dépôt, GitHub retarde beaucoup les
+    # crons : `pr-auto-merge` est en `*/5` et ses runs sont espacés de
+    # plusieurs heures. Le cron reste donc un filet, pas une horloge ; le
+    # réveil de `workflow_run` ci-dessous fait le travail quotidien.
     - cron: '*/10 * * * *'
+  workflow_run:
+    # Chaque fin de CI réveille l'alerte : c'est le moment où l'état des
+    # checks change, donc le moment où une PR peut basculer en « bloquée ».
+    # Le workflow part de `main` (branche par défaut), jamais de la PR.
+    workflows: ["CI"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       seuil:
