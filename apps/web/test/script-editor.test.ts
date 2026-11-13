@@ -12,8 +12,9 @@ import type { Card, Part, Stack } from "@cardwake/model";
 import { CassetteGateway, FakeModel, textResponse } from "@cardwake/agent";
 import type { LlmGateway } from "@cardwake/agent";
 import { acceptDraft, diffLines, linesOf, proposeScript } from "../src/engine/script-editor";
+import { planFor } from "../src/engine/model-access";
 import type { ScriptDraft } from "../src/engine/script-editor";
-import { makeEngine, scriptOf } from "./fixtures";
+import { demoStack, makeEngine, scriptOf } from "./fixtures";
 
 const SCRIPT = 'on mouseUp\n  put "165" into field "Total"\nend mouseUp\n';
 const PHRASE = "When the button is clicked, put 165 into the Total field.";
@@ -175,6 +176,25 @@ describe("échecs honnêtes", () => {
     expect(draft.status).toBe("failed");
     expect(draft.failure).toBe("no-recording");
     expect(draft.problem.length).toBeGreaterThan(0);
+  });
+
+  it("en mode enregistré par défaut, une phrase sans réponse le dit aussi", async () => {
+    const stack = demoStack();
+    const card = stack.cards.find((item) => item.id === stack.currentCardId);
+    const part = card?.parts[0];
+    if (card === undefined || part === undefined) throw new Error("the demo stack lost its parts");
+    // Le mode par défaut est la cassette : aucune clé, aucun réseau.
+    const plan = planFor(stack);
+    const draft = await proposeScript({
+      phrase: PHRASE,
+      stack,
+      card,
+      part,
+      gateway: plan.primary ?? plan.fallback,
+    });
+    expect(draft.status).toBe("failed");
+    expect(draft.failure).toBe("no-recording");
+    expect(draft.script).toBe("");
   });
 
   it("un script refusé par les contrôles ne devient pas un brouillon", async () => {
