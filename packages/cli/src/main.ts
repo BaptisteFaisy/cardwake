@@ -65,6 +65,10 @@ export async function main(argv: readonly string[], io: CliIO = defaultIo): Prom
   if (args.command === "validate") return (await import("./commands/validate")).validateCommand(args, io);
   if (args.command === "paraphrase") return (await import("./commands/paraphrase")).paraphraseCommand(args, io);
   if (args.command === "cassette") return await (await import("./commands/cassette")).cassetteCommand(args, io);
+  if (args.command === "new") return (await import("./commands/new")).newCommand(args, io);
+  if (args.command === "explain") return (await import("./commands/explain")).explainCommand(args, io);
+  if (args.command === "doctor") return await (await import("./commands/doctor")).doctorCommand(args, io);
+  if (args.command === "serve") return (await import("./commands/serve")).serveCommand(args, io);
   if (args.command === "mcp") return (await import("./commands/mcp")).mcpCommand(args, io);
   if (args.command === "live") {
     const { liveCommand } = await import("./commands/live");
