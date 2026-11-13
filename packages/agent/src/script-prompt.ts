@@ -8,6 +8,7 @@
 
 import type { LlmMessage } from "./types";
 import type { WriteScriptRequest } from "./write-script";
+import { LANGUAGE_CARD } from "./language-reference";
 
 /** Schéma de la sortie structurée : les quatre clés, rien d'autre. */
 export const SCRIPT_OUTPUT_SCHEMA: Record<string, unknown> = {
@@ -57,6 +58,9 @@ export function scriptSystemPrompt(request: WriteScriptRequest, options: ScriptP
     "## The object",
     `The script will be attached to the ${request.objectKind} "${request.objectName}".`,
     "",
+    "## The quick card (read this first)",
+    LANGUAGE_CARD,
+    "",
     "## Language reference (single source of truth)",
     options.languageReference,
   ].join("\n");
@@ -75,14 +79,31 @@ export function firstUserMessage(request: WriteScriptRequest): LlmMessage {
   return { role: "user", blocks: [{ type: "text", text }] };
 }
 
-/** Le message de réparation : le brouillon rejeté et la liste des problèmes. */
-export function repairUserMessage(draft: string, problems: string): LlmMessage {
+/**
+ * Le message de réparation : le brouillon rejeté, la liste des problèmes, et
+ * le résumé de la pile qui a déclenché ces problèmes.
+ *
+ * Sans le résumé, un refus comme « Unknown field "Heard" » ne dit pas au
+ * modèle quels champs existent : il corrige alors en inventant un autre nom.
+ * Avec le résumé, la correction s'appuie sur les noms réels — c'est la même
+ * information que la consigne, rappelée au moment où elle sert.
+ */
+export function repairUserMessage(draft: string, problems: string, stackSummary?: string): LlmMessage {
+  const known =
+    stackSummary === undefined || stackSummary.trim() === ""
+      ? []
+      : [
+          "The stack, as it really is — no other field, button or card exists:",
+          stackSummary,
+          "",
+        ];
   const text = [
     "The draft below was rejected. Fix every listed problem and reply again with the same structured output.",
     "",
     "Problems:",
     problems,
     "",
+    ...known,
     "Rejected draft:",
     draft,
   ].join("\n");
