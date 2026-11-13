@@ -86,7 +86,7 @@ numbers — every one of them has a command and a file behind it in
 |                                                          | 1 out of scope |                |
 |----------------------------------------------------------+----------------+----------------+
 | pull requests merged by the queue, no human click        | 40 of 41       | gh pr list     |
-| repository guards                                        | 373 files      | npm run guards |
+| repository guards                                        | 378 files      | npm run guards |
 |                                                          | 0 problems     |                |
 +----------------------------------------------------------+----------------+----------------+
 ```
