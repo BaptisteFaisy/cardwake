@@ -12,7 +12,14 @@ import { defineConfig } from "vitest/config";
  */
 export default defineConfig({
   test: {
-    include: ["packages/*/test/**/*.test.ts", "apps/*/test/**/*.test.ts", "evals/**/*.test.ts"],
+    include: [
+      "packages/*/test/**/*.test.ts",
+      "apps/*/test/**/*.test.ts",
+      "evals/**/*.test.ts",
+      // Le banc de mesure vit sous `scripts/` : son test vérifie la forme des
+      // mesures, pas les durées (voir `scripts/bench/bench.test.ts`).
+      "scripts/bench/**/*.test.ts",
+    ],
     environment: "node",
     pool: "threads",
     testTimeout: 20_000,
