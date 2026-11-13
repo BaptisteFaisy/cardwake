@@ -200,7 +200,7 @@ partent en `queued` indéfini (voir 2.3).
 | Fichier | Ce qu'il fait | Comment le lancer |
 | --- | --- | --- |
 | `scripts/infra/runner-doctor.sh` | Vérifie qu'au moins un runner **en ligne** porte le label `cardwake-worker` ; sort en 1 avec un message explicite sinon (la panne du 13/11). Auth native de `gh`, aucun jeton lu en fichier. | `scripts/infra/runner-doctor.sh [owner/name] [--wait 120] [--label L]` |
-| `.github/workflows/alert-merge-queue.yml` | Toutes les 10 minutes : détecte les PR `open` bloquées plus de 10 min (check requis `pending` ou absent, état `BLOCKED`/`UNKNOWN`) et pose **un seul** commentaire par PR, mis à jour sur place, plus une ligne au résumé du job. N'écrit jamais ailleurs que sur les PR de ce dépôt, ne relance rien, ne touche à aucune garde. | `gh workflow run alert-merge-queue.yml` (options `seuil`, `dry_run`) |
+| `.github/workflows/alert-merge-queue.yml` | Toutes les 10 minutes (cron) **et à chaque fin de CI** (`workflow_run` sur `CI`) : détecte les PR `open` bloquées plus de 10 min (check requis `pending` ou absent, état `BLOCKED`/`UNKNOWN`) et pose **un seul** commentaire par PR, mis à jour sur place, plus une ligne au résumé du job. N'écrit jamais ailleurs que sur les PR de ce dépôt, ne relance rien, ne touche à aucune garde. | `gh workflow run alert-merge-queue.yml` (options `seuil`, `dry_run`) |
 | `.github/workflows/nightly.yml` | Une fois par nuit : propriétés fast-check à 10 000 tirages, banc de mesures, recette ; les trois rapports partent en artefact. `timeout-minutes: 30`, hors budget de 5 min **parce qu'il ne tourne jamais en PR**. | `gh workflow run nightly.yml -f tirages=10000` |
 
 `scripts/infra/clean-branches.py` complète l'ensemble : il **liste** puis
@@ -229,3 +229,8 @@ origin --delete` suffit pour une branche déjà mergée.
 - Un crédit : `ci-native.yml` mentionné par le garde `couche0` n'existe pas dans
   `.github/workflows/` — le garde se protège d'un fichier absent, ce qui est
   sans effet mais à savoir avant de chercher un workflow fantôme.
+- Les crons GitHub sont **très en retard sur ce dépôt** : `pr-auto-merge` est
+  en `*/5` et ses runs observés sont espacés de 2 à 8 heures. Tout ce qui doit
+  être régulier ici ne peut pas reposer sur le cron seul — c'est pourquoi
+  l'alerte de file de merge se réveille aussi à chaque fin de CI
+  (`workflow_run`), le cron n'étant qu'un filet.
