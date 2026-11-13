@@ -1,15 +1,17 @@
 # Infrastructure CI — la topologie réelle
 
 Ce document décrit ce qui existe **aujourd'hui**, pas ce qui serait souhaitable.
-Relevé fait le 13/11/2026 au soir (19 h 12 → 19 h 45) avec `gh api`, `gh run
+Relevé fait le 13/11/2026 au soir (19 h 12 → 21 h 50) avec `gh api`, `gh run
 list`, `systemctl --user` sur le r630 et `ssh`. Chaque affirmation ci-dessous a
 été vérifiée à ce moment-là ; là où un point n'est pas résolu, c'est écrit.
 
-Un avertissement qui vaut pour tout le fichier : **cet état bouge**. Pendant le
-relevé lui-même, le runner `r630-cardwake-01` est passé de `online` à `offline`
-et `pc-cardwake-03` est passé de disparu à `online`. Un relevé de la semaine
-dernière ne dit rien de maintenant : relancer `scripts/infra/runner-doctor.sh`
-avant de conclure.
+Un avertissement qui vaut pour tout le fichier : **cet état bouge vite, et vite
+bien.** Pendant le relevé lui-même, `r630-cardwake-01` est passé de `online` à
+`offline`, `pc-cardwake-03` est passé de disparu à `online` — et, deux heures
+plus tard, **les trois runners enregistrés dans ce dépôt avaient disparu de
+GitHub** (ils n'existaient plus du tout côté API). Un relevé de la veille ne dit
+rien de maintenant : relancer `scripts/infra/runner-doctor.sh` avant de
+conclure.
 
 ## 1. Où tourne chaque job
 
@@ -39,16 +41,20 @@ de runner casse donc **la file de merge et le triage des rouges** en même temps
 
 ### 2.1 Enregistrés au niveau du dépôt (`repos/Tradoooo/cardwake/actions/runners`)
 
-| Nom | État au relevé | Labels | Où |
-| --- | --- | --- | --- |
-| `pc-cardwake-03` | `online` | `self-hosted`, `Linux`, `X64`, `cardwake-worker` | le poste de travail (unit `actions-runner-cardwake-03.service`, active) |
-| `r630-cardwake-01` | `offline` | idem | r630, unit `actions-runner-cardwake-01.service` → `inactive (dead)` |
-| `r630-cardwake-02` | `offline` | idem | r630, unit `actions-runner-cardwake-02.service` → `inactive (dead)` |
+**Au dernier relevé (13/11, 21 h 45), ce dépôt n'a plus aucun runner
+enregistré.** L'API renvoie `total_count: 0`.
 
-Les deux unités du r630 existent toujours (`systemctl --user list-units` les
-voit, `inactive dead`), et leurs répertoires aussi : elles sont **arrêtées**,
-pas désinstallées. Un `systemctl --user start` suffit à les relever, à condition
-que leur enregistrement soit encore valide côté GitHub.
+| Nom | 19 h 34 | 21 h 45 | Où |
+| --- | --- | --- | --- |
+| `pc-cardwake-03` | `online` | **disparu** | poste de travail (unit `actions-runner-cardwake-03.service`) |
+| `r630-cardwake-01` | `offline` | **disparu** | r630 (unit `actions-runner-cardwake-01.service`, `inactive dead`) |
+| `r630-cardwake-02` | `offline` | **disparu** | r630 (unit `actions-runner-cardwake-02.service`, `inactive dead`) |
+
+Les répertoires et les unités systemd existent encore sur les machines, mais
+l'enregistrement GitHub a disparu : **un `systemctl --user start` ne suffit
+plus**, il faut ré-enregistrer le runner (section 3). C'est là que se niche la
+volatilité : une machine peut garder un runner parfaitement fonctionnel et ne
+plus rien servir, parce que personne ne l'a rebranché côté GitHub.
 
 ### 2.2 Côté organisation (`orgs/Tradoooo/actions/runner-groups`)
 
@@ -101,13 +107,20 @@ contredit ce soir :
    l'enregistrement au niveau du dépôt.
 
 État honnête, donc : **le service tient debout aujourd'hui, mais pas grâce au
-groupe prévu pour lui.** Il tient grâce à trois runners de dépôt dont deux sont
-à l'arrêt, et grâce au groupe `Default` dont les runners portent par accident
-(ou par héritage de label) celui du projet. Deux gestes casseraient tout, sans
-bruit : retirer le label `cardwake-worker` des `r630-ci-*`, ou refermer
-`Default` aux dépôts publics. Dans les deux cas : file de merge à l'arrêt, PR
-qui ne mergent plus, zéro alerte. C'est le vrai risque de cette topologie, et
-il n'est pas résolu.
+groupe prévu pour lui.** Il tient grâce au groupe `Default` de l'organisation,
+dont les runners portent le label du projet ; le groupe `cardwake` qui devait
+accueillir ce dépôt est vide, et les trois runners enregistrés dans le dépôt
+ont eux-mêmes disparu dans la soirée (section 2.1). Deux gestes casseraient
+tout, sans bruit : retirer le label `cardwake-worker` des `r630-ci-*`, ou
+refermer `Default` aux dépôts publics. Dans les deux cas : file de merge à
+l'arrêt, PR qui ne mergent plus, zéro alerte. C'est le vrai risque de cette
+topologie, et il n'est pas résolu.
+
+C'est aussi pourquoi `scripts/infra/runner-doctor.sh` regarde **les deux**
+sources : un runner d'organisation sert ce dépôt si le groupe qui le contient
+l'autorise et si le groupe ouvre les dépôts publics. Ne regarder que les
+runners du dépôt donnerait un faux « panne » alors que la file de merge
+tourne (`r630-ci-01`, `r630-ci-02`, `r630-ci-09` l'ont prouvée le 13/11).
 
 ## 3. Reconstruire un runner
 
@@ -179,11 +192,12 @@ partent en `queued` indéfini (voir 2.3).
    gh run cancel <id>          # si l'on veut repartir propre
    gh workflow run pr-auto-merge.yml    # relance propre de la file
    ```
-3. **Remonter un runner ailleurs** — le poste de travail (`pc-cardwake-03`,
-   `actions-runner-cardwake-03.service`, `2.338.2`) est déjà enregistré au
-   niveau du dépôt : `systemctl --user start actions-runner-cardwake-03`
-   suffit à rendre un runner `online` avec le bon label. C'est le secours le
-   plus court, et il ne demande aucun changement de configuration côté GitHub.
+3. **Remonter un runner ailleurs** — le poste de travail
+   (`pc-cardwake-03`, `actions-runner-cardwake-03.service`, `2.338.2`) garde son
+   répertoire et son unité, mais **son enregistrement GitHub a disparu** (voir
+   2.1) : `systemctl --user start` ne le rendra pas `online`, il faut le
+   ré-enregistrer (section 3) — quelques minutes, et c'est le seul geste qui
+   redonne une runway au dépôt en propre.
 4. **Basculer sur GitHub-hosted, seulement en dernier recours, et par le
    propriétaire du dépôt.** `pr-auto-merge.yml` et `triage-rouge.yml` sont du
    shell et du `gh` : ils *pourraient* tourner sur `ubuntu-latest`. Mais
@@ -199,7 +213,7 @@ partent en `queued` indéfini (voir 2.3).
 
 | Fichier | Ce qu'il fait | Comment le lancer |
 | --- | --- | --- |
-| `scripts/infra/runner-doctor.sh` | Vérifie qu'au moins un runner **en ligne** porte le label `cardwake-worker` ; sort en 1 avec un message explicite sinon (la panne du 13/11). Auth native de `gh`, aucun jeton lu en fichier. | `scripts/infra/runner-doctor.sh [owner/name] [--wait 120] [--label L]` |
+| `scripts/infra/runner-doctor.sh` | Vérifie qu'au moins un runner **en ligne** portant le label `cardwake-worker` **peut servir ce dépôt** — runner du dépôt, ou runner d'organisation d'un groupe qui l'autorise ; sort en 1 avec un message explicite sinon (la panne du 13/11). Auth native de `gh`, aucun jeton lu en fichier. | `scripts/infra/runner-doctor.sh [owner/name] [--wait 120] [--label L]` |
 | `.github/workflows/alert-merge-queue.yml` | Toutes les 10 minutes (cron) **et à chaque fin de CI** (`workflow_run` sur `CI`) : détecte les PR `open` bloquées plus de 10 min (check requis `pending` ou absent, état `BLOCKED`/`UNKNOWN`) et pose **un seul** commentaire par PR, mis à jour sur place, plus une ligne au résumé du job. N'écrit jamais ailleurs que sur les PR de ce dépôt, ne relance rien, ne touche à aucune garde. | `gh workflow run alert-merge-queue.yml` (options `seuil`, `dry_run`) |
 | `.github/workflows/nightly.yml` | Une fois par nuit : propriétés fast-check à 10 000 tirages, banc de mesures, recette ; les trois rapports partent en artefact. `timeout-minutes: 30`, hors budget de 5 min **parce qu'il ne tourne jamais en PR**. | `gh workflow run nightly.yml -f tirages=10000` |
 
@@ -213,19 +227,29 @@ origin --delete` suffit pour une branche déjà mergée.
 
 ## 6. Ce qui n'est pas résolu
 
-- Le groupe d'organisation `cardwake` (id 3) reste **vide**. Les runners de ce
-  dépôt vivent au niveau du dépôt, ce qui marche mais ne survit pas à un
-  ré-enregistrement : chaque nouvelle machine doit être ajoutée à la main, dépôt
-  par dépôt.
+- Le groupe d'organisation `cardwake` (id 3) reste **vide**, et le dépôt n'a
+  plus aucun runner enregistré (2.1) : les jobs auto-hébergés ne tournent que
+  grâce aux runners du groupe `Default` de l'organisation. Chaque nouvelle
+  machine doit être ajoutée à la main, dépôt par dépôt, et le jour où le
+  groupe `Default` refuse les dépôts publics ou perd le label, plus rien ne
+  démarre.
 - Le déplacement d'un runner vers un groupe reste un geste **manuel dans
   l'interface GitHub** (l'API répond 404 d'après le relevé du 13/11, non
   rejoué ici).
 - Les deux runs `queued` depuis le 11/11 20:18 ne sont annulés par personne :
   ils resteront affichés jusqu'à ce qu'une main les annule.
-- `r630-cardwake-01` et `-02` sont installés mais **arrêtés** ; rien ne les
-  redémarre automatiquement au boot tant que `Restart=always` ne s'applique
-  qu'à un service déjà démarré (`systemctl --user enable` est nécessaire, et
-  `loginctl enable-linger` pour que l'utilisateur survive à la déconnexion).
+- `r630-cardwake-01` et `-02` sont installés mais **arrêtés et désenregistrés** ;
+  rien ne les redémarre au boot (`Restart=always` ne s'applique qu'à un service
+  déjà démarré : `systemctl --user enable` est nécessaire, et `loginctl
+  enable-linger` pour que l'utilisateur survive à la déconnexion). Leur
+  ré-enregistrement demande un jeton d'enregistrement, donc une action
+  humaine : ce lot documente, il n'enregistre rien.
+- La CI de `main` est **rouge une fois sur trois** à cause d'une propriété
+  fast-check instable (`packages/model/test/invariants.test.ts`, CAR-P-10,
+  « pile sans carte ») : mesuré 7 verts / 3 rouges sur 10 exécutions, et deux
+  PR de ce lot ont été rejetées par ce test avant de passer au rejeu. Le job de
+  nuit, lui, l'attrape à 10 000 tirages : c'est exactement son métier. La
+  correction est hors périmètre de ce lot (fichier TypeScript).
 - Un crédit : `ci-native.yml` mentionné par le garde `couche0` n'existe pas dans
   `.github/workflows/` — le garde se protège d'un fichier absent, ce qui est
   sans effet mais à savoir avant de chercher un workflow fantôme.
