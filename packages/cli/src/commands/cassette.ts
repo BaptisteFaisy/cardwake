@@ -4,10 +4,13 @@
  * - `list <pile>`   : empreinte, but et taille de chaque enregistrement.
  * - `verify [piles]`: les enregistrements dont l'empreinte ne correspond plus
  *   (via `CassetteGateway.verify` et l'empreinte canonique SHA-256).
- * - `record`        : REFUSÉE — enregistrer appelle un vrai modèle, ce qui
- *   coûte de l'argent et reste un geste humain (hook `no-live-model-guard`).
+ * - `record`        : REFUSÉE sans relais explicite — enregistrer appelle un
+ *   vrai modèle, ce qui coûte de l'argent et reste un geste humain (hook
+ *   `no-live-model-guard`). Le module `cassette-record.ts` porte la seule
+ *   porte ouverte : un relais donné, un `--yes` donné, un plafond d'appels.
  *
- * Aucun appel réseau, jamais : ce module ne lit que des fichiers locaux.
+ * Aucun appel réseau hors du relais, jamais : ce module ne lit que des
+ * fichiers locaux, et `doctor` réutilise son verdict (`checkStack`).
  */
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -78,17 +81,70 @@ async function expectedSituations(stackPath: string): Promise<Situations> {
   }
 }
 
-/** Piles à vérifier : celles passées en argument, sinon `stacks/*` d'ici. */
-function pilesOf(args: CliArgs, io: CliIO): string[] | null {
-  if (args.positionals.length > 0) return args.positionals;
+/** Piles d'un dossier de piles : ses sous-dossiers qui portent un `stack.json`. */
+export function stacksHere(dir = "stacks"): string[] | null {
   try {
-    return readdirSync("stacks", { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && existsSync(join("stacks", entry.name, "stack.json")))
-      .map((entry) => join("stacks", entry.name, "stack.json"));
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && existsSync(join(dir, entry.name, "stack.json")))
+      .map((entry) => join(dir, entry.name, "stack.json"));
   } catch {
-    io.err("cassette verify: no stack given and no ./stacks directory here");
     return null;
   }
+}
+
+/** Piles de la ligne de commande, ou toutes celles de `stacks/`. */
+function pilesOf(args: CliArgs, io: CliIO): string[] | null {
+  if (args.positionals.length > 0) return args.positionals;
+  const piles = stacksHere();
+  if (piles === null) io.err("cassette verify: no stack given and no ./stacks directory here");
+  return piles;
+}
+
+/** Le verdict d'une pile : ses enregistrements sont-ils encore ceux qu'elle demande ? */
+export type StackCheck = {
+  path: string;
+  /** `ok` certifié ; `unchecked` rien à comparer ; `broken` parcours morts ; `unreadable` fichier illisible. */
+  state: "ok" | "unchecked" | "broken" | "stale" | "unreadable";
+  /** Les lignes du compte rendu, telles que la personne les lit. */
+  lines: string[];
+  /** Ce qui ne va pas : 0 pour une cassette certifiée. */
+  problems: number;
+};
+
+/**
+ * Le contrôle d'une pile, en une seule implémentation : `cassette verify` et
+ * `doctor` lisent le même verdict, l'un l'imprime, l'autre en tire une ligne.
+ */
+export async function checkStack(stackPath: string): Promise<StackCheck> {
+  const read = loadCassette(stackPath);
+  if ("error" in read) {
+    return { path: stackPath, state: "unreadable", lines: [`cassette verify: ${read.error}`], problems: 1 };
+  }
+  const situations = await expectedSituations(stackPath);
+  if (situations.kind === "none") {
+    return {
+      path: stackPath,
+      state: "unchecked",
+      lines: [`${stackPath}: no demo scenario for this stack — ${read.entries.length} recording(s), not checked`],
+      problems: 0,
+    };
+  }
+  if (situations.kind === "broken") {
+    return {
+      path: stackPath,
+      state: "broken",
+      lines: [`${stackPath}: the demo flows no longer replay (${situations.reason}) — the recordings cannot be certified`],
+      problems: 1,
+    };
+  }
+  const verdict = cassetteFrom(read.entries).verify(situations.fingerprints);
+  const problems = verdict.stale.length + verdict.missing.length;
+  const lines = [
+    ...verdict.stale.map((fingerprint) => `${stackPath}: stale ${fingerprint}`),
+    ...verdict.missing.map((fingerprint) => `${stackPath}: missing ${fingerprint}`),
+  ];
+  if (problems === 0) lines.push(`${stackPath}: ${read.entries.length} recording(s), all up to date`);
+  return { path: stackPath, state: problems === 0 ? "ok" : "stale", lines, problems };
 }
 
 export function cassetteList(args: CliArgs, io: CliIO): number {
@@ -116,45 +172,32 @@ export async function cassetteVerify(args: CliArgs, io: CliIO): Promise<number> 
   if (piles === null) return 3;
   let problems = 0;
   for (const pile of piles) {
-    const read = loadCassette(pile);
-    if ("error" in read) {
-      io.err(`cassette verify: ${read.error}`);
-      problems += 1;
-      continue;
+    const check = await checkStack(pile);
+    for (const line of check.lines) {
+      if (check.state === "unreadable") io.err(line);
+      else io.out(line);
     }
-    const situations = await expectedSituations(pile);
-    if (situations.kind === "none") {
-      io.out(`${pile}: no demo scenario for this stack — ${read.entries.length} recording(s), not checked`);
-      continue;
-    }
-    if (situations.kind === "broken") {
-      io.out(`${pile}: the demo flows no longer replay (${situations.reason}) — the recordings cannot be certified`);
-      problems += 1;
-      continue;
-    }
-    const verdict = cassetteFrom(read.entries).verify(situations.fingerprints);
-    for (const fingerprint of verdict.stale) io.out(`${pile}: stale ${fingerprint}`);
-    for (const fingerprint of verdict.missing) io.out(`${pile}: missing ${fingerprint}`);
-    problems += verdict.stale.length + verdict.missing.length;
-    if (verdict.stale.length + verdict.missing.length === 0) {
-      io.out(`${pile}: ${read.entries.length} recording(s), all up to date`);
-    }
+    problems += check.problems;
   }
   return problems === 0 ? 0 : 1;
 }
 
-/** Refus assumé : la CLI n'a pas de clé, ne fait aucun appel réseau (7.11). */
-export function cassetteRecord(io: CliIO): number {
+/**
+ * Le refus d'origine, intact : sans relais explicite, enregistrer reste un
+ * geste humain, et la CLI n'a ni clé ni réseau (hook `no-live-model-guard`).
+ */
+export function cassetteRecordRefusal(io: CliIO): number {
   io.err("cassette record: refused.");
   io.err("Recording calls a live model: it costs real money and stays a human action.");
   io.err("This CLI never reads an API key and never makes a network call (no-live-model-guard).");
+  io.err("A human can record through the local relay: cardwake cassette record <stack> --relay <url> --yes [--max-calls n]");
   return 2;
 }
 
 export async function cassetteCommand(args: CliArgs, io: CliIO): Promise<number> {
   if (args.sub === "list") return cassetteList(args, io);
   if (args.sub === "verify") return await cassetteVerify(args, io);
-  if (args.sub === "record") return cassetteRecord(io);
+  if (args.sub === "record") return await (await import("./cassette-record")).cassetteRecordCommand(args, io);
   io.err("cassette: needs a sub-command — list, verify or record");
   return 3;
 }
