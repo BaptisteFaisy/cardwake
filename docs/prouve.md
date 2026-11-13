@@ -206,9 +206,11 @@ $ gh pr list --repo Tradoooo/cardwake --state merged --limit 500 --json number -
 41
 ```
 
-40 of 41 merged pull requests were merged by the queue. The single exception
-is #54, merged by a human: it moved the CI jobs from self-hosted runners to
-GitHub-hosted ones. The count grows as work lands — re-run the command.
+44 of the 45 merged pull requests had been merged by the queue when this page
+was written (2026-11-13, 21:05 UTC). The single exception was #54, merged by a
+human: it moved the CI jobs from self-hosted runners to GitHub-hosted ones.
+This count grows with every merge — it is a snapshot with a date, and the
+command above re-derives it.
 
 CI verdict, last run at the time of writing:
 
