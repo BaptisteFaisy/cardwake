@@ -27,6 +27,7 @@ import type { Root } from "react-dom/client";
 import { parseStackFile, serializeStack } from "@cardwake/model";
 import type { Stack } from "@cardwake/model";
 import { CardwakeProvider } from "../src/store";
+import { App } from "../src/App";
 import { Shelf } from "../src/screens/Shelf";
 import { CardPlay } from "../src/screens/CardPlay";
 import { CardBuild } from "../src/screens/CardBuild";
@@ -35,7 +36,7 @@ import { Reception } from "../src/screens/Reception";
 import { Settings } from "../src/screens/Settings";
 import { Spy } from "../src/screens/Spy";
 import { Proof } from "../src/screens/Proof";
-import { demoStack, makeEngine } from "./fixtures";
+import { demoStack, makeEngine, memoryStorage } from "./fixtures";
 
 /** Les balises WCAG 2.2 AA que l'audit couvre. */
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -125,7 +126,17 @@ function ecrans(): { nom: string; construire: () => ReactElement }[] {
     { nom: "Réglages", construire: () => avecMoteur(Settings) },
     { nom: "Espion", construire: () => avecMoteur(Spy) },
     { nom: "Preuves", construire: () => avecMoteur(Proof) },
+    // Le site entier : la barre de la pile (O4) et ses gestes d'export, de
+    // choix et de nouvelle pile vivent hors des écrans, donc ici.
+    { nom: "Site, barre de la pile", construire: ecranApp },
   ];
+}
+
+/** Le site monté sur une pile gardée : la barre de la pile est affichée. */
+function ecranApp(): ReactElement {
+  const { engine } = makeEngine(pileDuSite());
+  const storage = memoryStorage();
+  return createElement(App, { engine, storage, start: { kind: "restored", stack: pileDuSite() } });
 }
 
 /** Les contrôles focusables d'un écran, dans l'ordre du DOM. */

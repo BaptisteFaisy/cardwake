@@ -6,13 +6,26 @@
  * graine viennent de là). Une pile reçue s'ouvre toujours sur l'écran de
  * réception, en mode Fabriquer : réveiller ses agents est un geste d'auteur
  * (7.10, CAR-F-52).
+ *
+ * La pile est un fichier que tu possèdes (O4) : le site la garde sur
+ * l'appareil après chaque transaction, la reprend au démarrage, l'exporte en
+ * un clic et accepte qu'on en dépose une n'importe où dans la page. La
+ * mécanique de séance vit dans `parts/use-stack-session`, la barre dans
+ * `parts/StackBar`, le diagnostic d'un fichier refusé dans
+ * `parts/RefusedNotice`.
  */
-import { useState } from "react";
-import { createStack, parseStackFile } from "@cardwake/model";
+import { useMemo } from "react";
 import type { Stack } from "@cardwake/model";
 import { CardwakeProvider, useCardwake } from "./store";
 import type { CardwakeEngine } from "./engine/types";
+import type { SessionStart } from "./data/persist";
+import { browserStorage } from "./data/storage";
+import type { StorageLike } from "./data/storage";
 import { t } from "./i18n";
+import { useStackSession } from "./parts/use-stack-session";
+import { DropZone } from "./parts/DropZone";
+import { RefusedNotice } from "./parts/RefusedNotice";
+import { StackBar } from "./parts/StackBar";
 import { Shelf } from "./screens/Shelf";
 import { CardPlay } from "./screens/CardPlay";
 import { CardBuild } from "./screens/CardBuild";
@@ -21,62 +34,65 @@ import { Proof } from "./screens/Proof";
 import { Reception } from "./screens/Reception";
 import { Settings } from "./screens/Settings";
 import { Spy } from "./screens/Spy";
+import type { Screen } from "./routes";
 import "./styles/two-inks.css";
 
-/** Les écrans du brief (12.1), routés sans bibliothèque externe. */
-export type Screen = "shelf" | "card" | "journal" | "reception" | "settings" | "spy" | "proof";
+export type { Screen } from "./routes";
 
-export function App({ engine }: { engine: CardwakeEngine }): JSX.Element {
+export type AppProps = {
+  engine: CardwakeEngine;
+  /** Le stockage de l'appareil ; `undefined` : on prend celui du navigateur. */
+  storage?: StorageLike | null;
+  /** Ce que le démarrage a trouvé sur l'appareil. */
+  start?: SessionStart;
+};
+
+export function App({ engine, storage, start }: AppProps): JSX.Element {
+  const store = useMemo(() => (storage === undefined ? browserStorage() : storage), [storage]);
   return (
     <CardwakeProvider engine={engine}>
-      <Shell />
+      <Shell storage={store} start={start ?? { kind: "empty" }} />
     </CardwakeProvider>
   );
 }
 
-function Shell(): JSX.Element {
+type ShellProps = { storage: StorageLike | null; start: SessionStart };
+
+function Shell({ storage, start }: ShellProps): JSX.Element {
   const { engine, stack, notice, refusal } = useCardwake();
-  const [screen, setScreen] = useState<Screen>("shelf");
-  const [fileError, setFileError] = useState<string | null>(null);
-
-  /** Ouvre une pile : réception d'abord si elle vient d'un fichier (CAR-F-52). */
-  const openStack = (next: Stack, mode: "play" | "build"): void => {
-    engine.openStack(next);
-    const received = next.provenance.kind === "received" && !next.provenance.trusted;
-    engine.setMode(received ? "build" : mode);
-    setFileError(null);
-    setScreen(received ? "reception" : "card");
-  };
-
-  const openDemo = (next: Stack): void => openStack(next, "play");
-  const openNew = (): void => openStack(createStack(t("shelf.newStackName")), "build");
-
-  /** Import d'un fichier : validation par schéma, refus entier avec la raison (CAR-F-51). */
-  const openFile = (file: File): void => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const parsed = parseStackFile(String(reader.result ?? ""));
-      if (parsed.ok) openStack(parsed.stack, "play");
-      else setFileError(parsed.errors.join(", "));
-    };
-    reader.readAsText(file);
-  };
-
+  const session = useStackSession({ engine, storage, start });
   return (
     <div className="app">
-      <TopBar screen={screen} go={setScreen} hasStack={stack !== null} />
+      <DropZone onFile={session.openFile} />
+      <TopBar screen={session.screen} go={session.go} hasStack={stack !== null} />
       {notice !== null ? (
         <p className={`state-note${refusal !== null ? " refusal" : ""}`} role="status">
           {notice}
         </p>
       ) : null}
       <main className="screen">
+        <StackBar
+          stack={stack}
+          resumed={session.resumed}
+          status={session.status}
+          storage={storage}
+          onExport={session.exportCurrent}
+          onOpenAnother={() => session.go("shelf")}
+          onNewStack={session.openNew}
+        />
+        {session.refused !== null ? (
+          <RefusedNotice
+            fault={session.refused.fault}
+            onDownload={session.downloadRefused}
+            onStartEmpty={session.openNew}
+            onDismiss={session.dismissRefusal}
+          />
+        ) : null}
         <Body
-          screen={screen}
-          onOpenDemo={openDemo}
-          onNew={openNew}
-          onOpenFile={openFile}
-          fileError={fileError}
+          screen={session.screen}
+          onOpenDemo={session.openDemo}
+          onNew={session.openNew}
+          onOpenFile={session.openFile}
         />
       </main>
     </div>
@@ -128,15 +144,17 @@ type BodyProps = {
   onOpenDemo: (stack: Stack) => void;
   onNew: () => void;
   onOpenFile: (file: File) => void;
-  fileError: string | null;
 };
 
 function Body(props: BodyProps): JSX.Element {
-  const { screen, onOpenDemo, onNew, onOpenFile, fileError } = props;
+  const { screen, onOpenDemo, onNew, onOpenFile } = props;
   const { mode } = useCardwake();
   switch (screen) {
     case "shelf":
-      return <Shelf onOpen={onOpenDemo} onNew={onNew} onOpenFile={onOpenFile} fileError={fileError} />;
+      // Le refus d'un fichier est porté par `RefusedNotice`, juste au-dessus,
+      // avec ses gestes (repartir d'une pile vide, télécharger le fichier
+      // refusé). L'étagère garde son emplacement et ne dit donc rien elle-même.
+      return <Shelf onOpen={onOpenDemo} onNew={onNew} onOpenFile={onOpenFile} fileError={null} />;
     case "card":
       return mode === "play" ? <CardPlay /> : <CardBuild />;
     case "journal":

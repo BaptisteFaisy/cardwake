@@ -202,6 +202,30 @@ code,
 }
 
 /* --------------------------------------------------------------------- */
+/* La barre de la pile (O4) : ce que l'appareil garde, l'export, le choix  */
+/* --------------------------------------------------------------------- */
+
+.stack-bar {
+  margin: 0 0 0.8rem;
+}
+
+.stack-bar__state {
+  margin: 0 0 0.3rem;
+}
+
+.stack-bar__problem {
+  margin: 0.2rem 0 0.3rem;
+  padding-left: 0.6rem;
+  border-left: 3px solid var(--accent);
+}
+
+.stack-bar__hint {
+  margin: 0.2rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+/* --------------------------------------------------------------------- */
 /* Carte : le cadre 512×342 mis à l'échelle (11.8)                        */
 /* --------------------------------------------------------------------- */
 
