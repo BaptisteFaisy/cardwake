@@ -48,9 +48,24 @@ function installedNow(engine: CardwakeEngine, partId: number, script: string): b
   return findPart(stack, card, partId)?.script === script;
 }
 
+/**
+ * La demande de brouillon : la passerelle de la pile (la cassette par
+ * défaut), puis la chaîne de `@cardwake/agent`.
+ */
+function askForDraft(props: ScriptEditorProps, phrase: string): Promise<ScriptDraft> {
+  const plan = planFor(props.stack);
+  return proposeScript({
+    phrase,
+    stack: props.stack,
+    card: props.card,
+    part: props.part,
+    gateway: plan.primary ?? plan.fallback,
+  });
+}
+
 /** L'état de l'éditeur : un seul endroit qui touche au moteur, et quand. */
 function useScriptDraft(props: ScriptEditorProps): Editor {
-  const { engine, stack, card, part } = props;
+  const { engine, part } = props;
   const [text, setText] = useState(part.script);
   const [phrase, setPhrase] = useState("");
   const [draft, setDraft] = useState<ScriptDraft | null>(null);
@@ -67,13 +82,19 @@ function useScriptDraft(props: ScriptEditorProps): Editor {
   const propose = (): void => {
     setBusy(true);
     setNote(null);
-    const plan = planFor(stack);
-    void proposeScript({ phrase, stack, card, part, gateway: plan.primary ?? plan.fallback }).then(
-      (next) => {
+    void askForDraft(props, phrase)
+      .then((next) => {
         setDraft(next);
+      })
+      .catch(() => {
+        // Panne imprévue : le brouillon est jeté, l'auteur n'est pas laissé
+        // devant un bouton qui ne répond plus.
+        setDraft(null);
+        setNote(t("build.draftFailedWhy", { why: t("build.draftFailedUnknown") }));
+      })
+      .finally(() => {
         setBusy(false);
-      },
-    );
+      });
   };
 
   const accept = (): void => {

@@ -123,6 +123,7 @@ const TEXTS: Record<string, string> = {
   "build.draftAccepted": "The draft is installed; undo takes it back.",
   "build.draftRefused": "The draft is dropped: nothing was installed.",
   "build.draftFailedWhy": "No usable draft came back: {why}",
+  "build.draftFailedUnknown": "the model could not be reached",
   "build.draftNoGateway": "No model is reachable for this stack. Write the script yourself, or point the site at a relay in Settings.",
   "build.draftNoRecording": "No recorded answer for this phrase: the site runs in recorded mode, without network.",
 
