@@ -90,18 +90,20 @@ export async function main(argv: readonly string[], io: CliIO = defaultIo): Prom
  * constructeur dans `lang/lexer.ts`). Sous `vite-node`, argv[1] vaut le binaire
  * `vite-node` ; sous Vitest (qui importe aussi ce module), argv[1] vaut
  * `vitest` : l'égalité stricte sur le nom évite toute exécution parasite.
+ *
+ * L'attente est de premier niveau : sous `vite-node`, le module est évalué
+ * avant que le serveur ne se ferme. Une promesse flottante laissait la
+ * fermeture arriver en plein import dynamique, et la commande mourait sur
+ * « The server is being restarted or closed ».
  */
 const argv1 = process.argv[1] === undefined ? "" : process.argv[1].split("/").pop() ?? "";
 const entry = process.argv[1] === undefined ? "" : pathToFileURL(process.argv[1]).href;
 const invokedDirectly = (entry !== "" && import.meta.url === entry) || argv1 === "vite-node";
 if (invokedDirectly) {
-  main(process.argv.slice(2)).then(
-    (code) => {
-      process.exitCode = code;
-    },
-    (error: unknown) => {
-      console.error(`cardwake: ${error instanceof Error ? error.message : String(error)}`);
-      process.exitCode = 1;
-    },
-  );
+  try {
+    process.exitCode = await main(process.argv.slice(2));
+  } catch (error: unknown) {
+    console.error(`cardwake: ${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
+  }
 }
