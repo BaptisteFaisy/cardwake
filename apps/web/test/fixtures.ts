@@ -72,3 +72,9 @@ export function textOf(stack: Stack, cardId: number, partId: number): string {
   if (own && own.kind === "field") return own.text;
   return card.content[String(partId)] ?? "";
 }
+
+/** Le script d'un élément de la carte, lu dans la pile (les éléments de la carte). */
+export function scriptOf(stack: Stack, cardId: number, partId: number): string {
+  const card = stack.cards.find((item) => item.id === cardId);
+  return card?.parts.find((part) => part.id === partId)?.script ?? "";
+}

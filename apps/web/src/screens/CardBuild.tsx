@@ -8,8 +8,9 @@
  * (CAR-F-05). Le déplacement d'un élément se fait aux flèches, comme le reste,
  * au clavier (12.4).
  *
- * Les scripts sont montrés mais non exécutés : l'atelier de script et
- * l'exécution arrivent avec `host.ts`/`dispatch.ts` (autre lot).
+ * L'onglet script est un vrai éditeur : le texte s'applique par `setScript`, et
+ * une phrase produit un brouillon relu, essayé à blanc et diffé — accepté ou
+ * refusé par l'humain seul (`ScriptEditor`, lot de l'atelier de phrase).
  */
 import { useState } from "react";
 import type { KeyboardEvent } from "react";
@@ -20,6 +21,7 @@ import { useCardwake } from "../store";
 import type { CardwakeEngine } from "../engine/types";
 import { t } from "../i18n";
 import { CardFrame } from "./CardPlay";
+import { ScriptEditor } from "./ScriptEditor";
 
 export function CardBuild(): JSX.Element {
   const { engine, stack, card } = useCardwake();
@@ -54,6 +56,9 @@ export function CardBuild(): JSX.Element {
         {selected !== null ? (
           <Inspector
             part={selected}
+            engine={engine}
+            stack={stack}
+            card={card}
             onRect={(rect) => engine.setPartRect(selected.id, rect)}
             onProp={(prop, value) => engine.setPartProp(selected.id, prop, value)}
             onDelete={() => {
@@ -177,6 +182,9 @@ function Palette(props: PaletteProps): JSX.Element {
 
 type InspectorProps = {
   part: Part;
+  engine: CardwakeEngine;
+  stack: Stack;
+  card: Card;
   onRect: (rect: Rect) => void;
   onProp: (prop: PropName, value: string) => void;
   onDelete: () => void;
@@ -184,7 +192,7 @@ type InspectorProps = {
 
 /** Inspecteur : propriétés, script, agent — trois onglets (12.1). */
 function Inspector(props: InspectorProps): JSX.Element {
-  const { part, onRect, onProp, onDelete } = props;
+  const { part, engine, stack, card, onRect, onProp, onDelete } = props;
   const [tab, setTab] = useState<"properties" | "script" | "agent">("properties");
   return (
     <div className="inspector" aria-label={t("build.selected")}>
@@ -196,7 +204,9 @@ function Inspector(props: InspectorProps): JSX.Element {
       {tab === "properties" ? (
         <PropertiesTab part={part} onRect={onRect} onProp={onProp} onDelete={onDelete} />
       ) : null}
-      {tab === "script" ? <ScriptTab part={part} /> : null}
+      {tab === "script" ? (
+        <ScriptEditor key={part.id} engine={engine} stack={stack} card={card} part={part} />
+      ) : null}
       {tab === "agent" ? <p>{t("build.agentNone")}</p> : null}
     </div>
   );
@@ -323,15 +333,5 @@ function RectEditor({ rect, onRect }: { rect: Rect; onRect: (rect: Rect) => void
         {t("build.applyRect")}
       </button>
     </fieldset>
-  );
-}
-
-/** Onglet script : lecture seule tant que l'exécution n'est pas branchée. */
-function ScriptTab({ part }: { part: Part }): JSX.Element {
-  return (
-    <div className="props">
-      <textarea className="script-text" rows={10} readOnly value={part.script} aria-label={t("build.tabScript")} />
-      <p>{t("play.notWiredHint")}</p>
-    </div>
   );
 }
