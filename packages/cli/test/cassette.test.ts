@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { cassetteCommand, cassettePathFor, loadCassette } from "../src/commands/cassette";
 import { capture, cliArgs, fakeEntry, stackPath, tempStack } from "./helpers";
 
-import { copyFileSync, mkdtempSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -23,10 +23,10 @@ function bareStackPath(slug: string): string {
 const FP = "ab".repeat(32);
 
 describe("cassette list", () => {
-  it("prints fingerprint, purpose and size of each recording", () => {
+  it("prints fingerprint, purpose and size of each recording", async () => {
     const file = tempStack(undefined, { mode: "cassette", entries: [fakeEntry(FP)] });
     const captured = capture();
-    const code = cassetteCommand(cliArgs({ command: "cassette", sub: "list", positionals: [file] }), captured.io);
+    const code = await cassetteCommand(cliArgs({ command: "cassette", sub: "list", positionals: [file] }), captured.io);
     expect(code).toBe(0);
     const text = captured.out.join("\n");
     expect(text).toContain(FP);
@@ -35,66 +35,79 @@ describe("cassette list", () => {
     expect(text).toContain("1 recording(s)");
   });
 
-  it("says when no cassette file sits next to the stack", () => {
+  it("says when no cassette file sits next to the stack", async () => {
     const captured = capture();
-    const code = cassetteCommand(cliArgs({ command: "cassette", sub: "list", positionals: [bareStackPath("manor")] }), captured.io);
+    const code = await cassetteCommand(cliArgs({ command: "cassette", sub: "list", positionals: [bareStackPath("manor")] }), captured.io);
     expect(code).toBe(0);
     expect(captured.out.join("\n")).toContain("no cassette file");
   });
 
-  it("exits 3 without a stack path", () => {
+  it("exits 3 without a stack path", async () => {
     const captured = capture();
-    expect(cassetteCommand(cliArgs({ command: "cassette", sub: "list" }), captured.io)).toBe(3);
+    expect(await cassetteCommand(cliArgs({ command: "cassette", sub: "list" }), captured.io)).toBe(3);
   });
 });
 
 describe("cassette verify", () => {
-  it("lists every recording as stale when no situation expects it", () => {
-    // Le constructeur de situations (lot C8) n'est pas branché : aucune
-    // situation attendue, donc TOUT enregistrement est périmé — c'est le
-    // comportement honnête de `CassetteGateway.verify([])`.
+  it("refuses to certify a stack it has no scenario for", async () => {
+    // Une pile hors `stacks/<nom-de-pile>/` n'a pas de parcours connu : rien
+    // ne peut être affirmé sur ses enregistrements, et le dire vaut mieux que
+    // de les déclarer tous périmés — c'était l'ancien comportement, faux.
     const file = tempStack(undefined, [fakeEntry(FP), fakeEntry("cd".repeat(32))]);
     const captured = capture();
-    const code = cassetteCommand(cliArgs({ command: "cassette", sub: "verify", positionals: [file] }), captured.io);
-    expect(code).toBe(1);
-    const text = captured.out.join("\n");
-    expect(text).toContain(`stale ${FP}`);
-    expect(text).toContain(`stale ${"cd".repeat(32)}`);
-  });
-
-  it("reports an empty cassette as up to date", () => {
-    const file = tempStack(undefined, []);
-    const captured = capture();
-    const code = cassetteCommand(cliArgs({ command: "cassette", sub: "verify", positionals: [file] }), captured.io);
+    const code = await cassetteCommand(cliArgs({ command: "cassette", sub: "verify", positionals: [file] }), captured.io);
     expect(code).toBe(0);
-    expect(captured.out.join("\n")).toContain("0 recording(s), all up to date");
+    expect(captured.out.join("\n")).toContain("no demo scenario for this stack");
   });
 
-  it("accepts several stacks and a missing cassette file", () => {
+  it("checks the three demo stacks against their own scenarios", async () => {
     const captured = capture();
-    const code = cassetteCommand(
+    const code = await cassetteCommand(cliArgs({ command: "cassette", sub: "verify" }), captured.io);
+    expect(code).toBe(0);
+    const text = captured.out.join("\n");
+    expect(text).toContain("stacks/manor/stack.json");
+    expect(text).toContain("all up to date");
+    expect(text).not.toContain("stale");
+    expect(text).not.toContain("missing");
+  });
+
+  it("names a recording the demo flows no longer ask for", async () => {
+    // La cassette d'une vraie pile de démonstration, avec un enregistrement
+    // que plus personne ne demande : `verify` doit le nommer, et sortir en 1.
+    const dir = mkdtempSync(join(tmpdir(), "cardwake-verify-"));
+    const pile = join(dir, "manor");
+    mkdirSync(pile, { recursive: true });
+    copyFileSync(stackPath("manor"), join(pile, "stack.json"));
+    const cassette = JSON.parse(readFileSync("stacks/manor/cassette.json", "utf8"));
+    cassette.entries.push(fakeEntry("ff".repeat(32)));
+    writeFileSync(join(pile, "cassette.json"), JSON.stringify(cassette));
+    const captured = capture();
+    const code = await cassetteCommand(cliArgs({ command: "cassette", sub: "verify", positionals: [join(pile, "stack.json")] }), captured.io);
+    expect(code).toBe(1);
+    expect(captured.out.join("\n")).toContain(`stale ${"ff".repeat(32)}`);
+  });
+
+  it("accepts several stacks and a missing cassette file", async () => {
+    const captured = capture();
+    const code = await cassetteCommand(
       cliArgs({ command: "cassette", sub: "verify", positionals: [bareStackPath("manor"), bareStackPath("quotes")] }),
       captured.io,
     );
     expect(code).toBe(0);
-    expect(captured.out.join("\n")).toContain("all up to date");
+    expect(captured.out.join("\n")).toContain("not checked");
   });
 
-  it("exits 1 on an unreadable cassette file", () => {
+  it("reads the cassette file beside the stack", () => {
     const file = tempStack(undefined, []);
-    const captured = capture();
-    const broken = cliArgs({ command: "cassette", sub: "verify", positionals: [file] });
     expect(loadCassette(file).found).toBe(true);
     expect(cassettePathFor(file)).toContain("cassette.json");
-    expect(typeof broken.sub).toBe("string");
-    expect(captured.err).toEqual([]);
   });
 });
 
 describe("cassette record", () => {
-  it("always refuses: recording costs money and stays a human action", () => {
+  it("always refuses: recording costs money and stays a human action", async () => {
     const captured = capture();
-    const code = cassetteCommand(cliArgs({ command: "cassette", sub: "record", positionals: [stackPath("manor")] }), captured.io);
+    const code = await cassetteCommand(cliArgs({ command: "cassette", sub: "record", positionals: [stackPath("manor")] }), captured.io);
     expect(code).toBe(2);
     const text = captured.err.join("\n");
     expect(text).toContain("refused");
@@ -103,9 +116,9 @@ describe("cassette record", () => {
     expect(text).toContain("never makes a network call");
   });
 
-  it("exits 3 without a sub-command", () => {
+  it("exits 3 without a sub-command", async () => {
     const captured = capture();
-    expect(cassetteCommand(cliArgs({ command: "cassette" }), captured.io)).toBe(3);
+    expect(await cassetteCommand(cliArgs({ command: "cassette" }), captured.io)).toBe(3);
     expect(captured.err.join("\n")).toContain("list, verify or record");
   });
 });
