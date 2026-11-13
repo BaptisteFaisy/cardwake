@@ -1,0 +1,119 @@
+/* --------------------------------------------------------------------- */
+/* Réception et Réglages                                                  */
+/* --------------------------------------------------------------------- */
+
+.reception .gestures {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0.8rem 0;
+}
+
+.reception .gesture {
+  border: 2px solid var(--ink);
+  padding: 0.6rem 0.8rem;
+  background: #fffdf8;
+}
+
+.reception .gesture .hint {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+
+.agent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.agent-list li {
+  border: 1px solid var(--rule);
+  padding: 0.35rem 0.5rem;
+}
+
+table.settings-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table.settings-table th,
+table.settings-table td {
+  border: 1px solid var(--ink);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.settings-section {
+  border: 1px solid var(--rule);
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.8rem;
+  background: #fffdf8;
+}
+
+.relay-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------- */
+/* Mouvement et petites largeurs (12.3, 12.4)                             */
+/* --------------------------------------------------------------------- */
+
+.card-fade-enter {
+  animation: card-fade 220ms ease-out;
+}
+
+@keyframes card-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mouvement réduit (12.4) : plus d'animation, plus de transition, plus de
+   défilement doux. La flamme reste allumée mais immobile, l'entrée du
+   journal apparaît d'un coup, l'encre change de couleur sans fondu. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Jouer reste lisible dès 360 px : tout en colonne, rien ne déborde. */
+@media (max-width: 420px) {
+  .screen {
+    padding: 0.5rem;
+  }
+
+  .topbar {
+    padding: 0.5rem;
+  }
+
+  .part-field input,
+  .part-field textarea {
+    font-size: 0.8rem;
+    padding: 0.1rem 0.2rem;
+  }
+
+  .part-button button {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.2rem;
+  }
+}

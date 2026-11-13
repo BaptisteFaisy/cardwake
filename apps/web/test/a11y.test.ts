@@ -37,6 +37,15 @@ import { Settings } from "../src/screens/Settings";
 import { Spy } from "../src/screens/Spy";
 import { Proof } from "../src/screens/Proof";
 import { demoStack, makeEngine, memoryStorage } from "./fixtures";
+import {
+  decrire,
+  focusables,
+  installerClavier,
+  nomAccessible,
+  ordreDeTabulation,
+  tabulationsJusqua,
+  taperTab,
+} from "./clavier";
 
 /** Les balises WCAG 2.2 AA que l'audit couvre. */
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -44,12 +53,10 @@ const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 /**
  * Le contraste des couleurs se mesure sur une vraie mise en page : jsdom ne
  * la calcule pas (pas de canvas), et axe rendrait la règle « incomplete ».
- * On la désactive ici, en le disant : elle se vérifie dans un navigateur.
+ * On la désactive ici, en le disant : elle se vérifie dans un navigateur,
+ * et `scripts/quality/contrast.py` la mesure sur les styles du dépôt.
  */
 const AUDIT = { runOnly: { type: "tag" as const, values: WCAG }, rules: { "color-contrast": { enabled: false } } };
-
-/** Les balises qui portent un contrôle au clavier. */
-const SELECTEUR = "button, a[href], input, select, textarea, [tabindex]";
 
 /** Les écrans montés par le test en cours, démontés après chaque cas. */
 const montes: { racine: Root; conteneur: HTMLElement }[] = [];
@@ -139,44 +146,6 @@ function ecranApp(): ReactElement {
   return createElement(App, { engine, storage, start: { kind: "restored", stack: pileDuSite() } });
 }
 
-/** Les contrôles focusables d'un écran, dans l'ordre du DOM. */
-function focusables(conteneur: HTMLElement): HTMLElement[] {
-  return [...conteneur.querySelectorAll<HTMLElement>(SELECTEUR)].filter((element) => {
-    if (element.hasAttribute("disabled")) return false;
-    const tabindex = element.getAttribute("tabindex");
-    return tabindex === null || Number(tabindex) >= 0;
-  });
-}
-
-/** Le libellé accessible d'un contrôle : aria, label, texte, titre. */
-function nomAccessible(element: HTMLElement): string {
-  const aria = element.getAttribute("aria-label")?.trim();
-  if (aria) return aria;
-  const reference = element.getAttribute("aria-labelledby");
-  if (reference) {
-    const texte = reference
-      .split(/\s+/)
-      .map((id) => document.getElementById(id)?.textContent?.trim() ?? "")
-      .join(" ")
-      .trim();
-    if (texte) return texte;
-  }
-  const etiquettes = (element as HTMLInputElement).labels;
-  if (etiquettes && etiquettes.length > 0) {
-    const texte = [...etiquettes].map((label) => label.textContent?.trim() ?? "").join(" ").trim();
-    if (texte) return texte;
-  }
-  const propre = element.textContent?.trim();
-  if (propre) return propre;
-  return element.getAttribute("title")?.trim() ?? "";
-}
-
-/** Un libellé court pour les messages d'échec. */
-function decrire(element: HTMLElement): string {
-  const texte = (element.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 24);
-  return `<${element.tagName.toLowerCase()}>${texte === "" ? "" : ` « ${texte} »`}`;
-}
-
 /** Le contrôle au clavier seul d'un écran : rend la liste des écarts.
  *
  * Un écran de pure lecture (l'espion, par exemple) n'a aucun contrôle : il
@@ -226,6 +195,38 @@ describe("parcours au clavier seul", () => {
     });
   }
 
+  /**
+   * L'ordre de tabulation suit l'ordre du document : Tab passe d'un contrôle
+   * au suivant, dans l'ordre où le DOM les présente. Un `tabindex` positif
+   * romprait cet ordre — c'est aussi ce que vérifie `verifierClavier`.
+   */
+  for (const ecran of ecrans()) {
+    it(`${ecran.nom} : Tab suit l'ordre du document`, async () => {
+      const conteneur = await monter(ecran.construire());
+      await laisserTourner();
+      const attendus = focusables(conteneur);
+      // L'ordre du navigateur (tabindex positifs d'abord) doit être l'ordre
+      // du document : sinon un `tabindex` positif a décollé un contrôle.
+      expect(ordreDeTabulation(conteneur), "un tabindex positif change l'ordre de tabulation").toEqual(attendus);
+      const parcourus: HTMLElement[] = [];
+      await act(async () => {
+        for (const _ of attendus) {
+          taperTab(conteneur);
+          parcourus.push(document.activeElement as HTMLElement);
+        }
+      });
+      const ecarts = attendus
+        .map(
+          (element, rang) =>
+            parcourus[rang] === element
+              ? null
+              : `${decrire(element)} : atteint après ${decrire(parcourus[rang] ?? element)}`,
+        )
+        .filter((ecart): ecart is string => ecart !== null);
+      expect(ecarts, ecarts.join("\n")).toEqual([]);
+    });
+  }
+
   it("parcours P2 : créer un champ puis un bouton depuis la palette", async () => {
     const { engine } = makeEngine(pileDuSite());
     engine.setMode("build");
@@ -249,5 +250,46 @@ describe("parcours au clavier seul", () => {
     expect(engine.currentCard()?.parts.length ?? 0).toBe(avant + 2);
     const ecarts = await act(async () => verifierClavier(conteneur));
     expect(ecarts, "l'écran de fabrication casse le clavier").toEqual([]);
+  });
+
+  /**
+   * Le parcours P2 **au clavier seul** : Tab atteint la palette, Entrée
+   * active le bouton. Le harnais clavier de `clavier.ts` fait ce qu'un
+   * navigateur fait — jsdom, lui, n'active rien sur une touche.
+   */
+  it("parcours P2 : Tab atteint la palette, Entrée crée le champ puis le bouton", async () => {
+    const { engine } = makeEngine(pileDuSite());
+    engine.setMode("build");
+    engine.navigate(10);
+    const conteneur = await monter(createElement(CardwakeProvider, { engine, children: createElement(CardBuild) }));
+    const nettoyer = installerClavier();
+    try {
+      const avant = engine.currentCard()?.parts.length ?? 0;
+      const palette = () => [...conteneur.querySelectorAll<HTMLButtonElement>(".palette button")];
+      const champ = palette().find((bouton) => bouton.textContent?.trim() === "Field");
+      const bouton = palette().find((element) => element.textContent?.trim() === "Button");
+      expect(champ, "la palette n'offre pas le bouton « Field »").toBeDefined();
+      expect(bouton, "la palette n'offre pas le bouton « Button »").toBeDefined();
+
+      const tapes = await act(async () => tabulationsJusqua(conteneur, champ!));
+      expect(tapes, "la palette n'est pas atteignable au Tab").toBeGreaterThan(0);
+      expect(document.activeElement, "Tab n'a pas posé le focus sur la palette").toBe(champ);
+
+      await act(async () => {
+        champ!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      });
+      await laisserTourner();
+      expect(engine.currentCard()?.parts.length ?? 0).toBe(avant + 1);
+
+      const tapesBouton = await act(async () => tabulationsJusqua(conteneur, bouton!));
+      expect(tapesBouton, "le bouton de la palette n'est plus atteignable au Tab").toBeGreaterThan(0);
+      await act(async () => {
+        bouton!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      });
+      await laisserTourner();
+      expect(engine.currentCard()?.parts.length ?? 0).toBe(avant + 2);
+    } finally {
+      nettoyer();
+    }
   });
 });
