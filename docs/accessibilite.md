@@ -6,9 +6,10 @@ Fabriquer s'utilise au clavier, un texte écrit par un agent est annoncé aux
 lecteurs d'écran. La recette (§ 18, point 12) demande un contrôle automatique
 sans erreur sur les sept écrans et un parcours P2 fait au clavier seul.
 
-Ce document dit ce qui est contrôlé automatiquement, par quoi, et ce qui ne
-l'est pas. Il est écrit pour être lu tel quel : un « tout est vert » sans
-détail ne sert à rien au jury.
+Ce document dit ce qui est contrôlé automatiquement, par quoi, ce qui a été
+vérifié à la main dans un vrai Chrome, et ce qui reste à vérifier — la
+lecture d'écran réelle, notamment. Il est écrit pour être lu tel quel : un
+« tout est vert » sans détail ne sert à rien au jury.
 
 ## 1. Les contrôles automatiques
 
@@ -117,13 +118,57 @@ Verdict du script sur cette branche : **19 couples mesurés, 0 en échec,
    au script de contraste de suivre une cascade répartie sur plusieurs
    fichiers.
 
-## 4. Ce qui n'est pas contrôlé automatiquement, et pourquoi
+## 4. Ce qui a été vérifié à la main, dans un vrai Chrome
+
+Le jsdom ne sait pas rendre une page. Le contraste et le focus ont donc été
+**mesurés dans Chrome**, sur le site servi par `npm run dev` (même code, même
+styles). Ce que le navigateur a montré :
+
+| Écran | Textes mesurés | Sous le seuil |
+| --- | --- | --- |
+| Étagère | 28 | 0 |
+| Carte, mode Jouer | 30 | 0 |
+| Carte, mode Fabriquer | 22 | 0 |
+| Journal | 25 | 0 |
+| Réglages | 50 | 0 |
+
+Les ratios trouvés sont ceux que le script annonce : 15,99 pour l'encre sur le
+papier, 17,15 sur un panneau clair, 9,11 pour l'encre secondaire, 8,50 pour la
+même encre sur le fond de page. La bordure corrigée est bien celle du dépôt
+(`rgb(143,138,125)` = #8f8a7d) sur les sections de réglages.
+
+Le mouvement réduit, lui, a été vérifié en activant la préférence du
+navigateur :
+
+| | sans préférence | avec `prefers-reduced-motion: reduce` |
+| --- | --- | --- |
+| `scroll-behavior` de la page | `smooth` | `auto` |
+| durée d'une transition (champ) | 0,2 s | 1e-05 s |
+| durée d'une animation | 0,2 s | 1e-05 s |
+
+Et le focus, au clavier : le contour est bien `solid 3px rgb(31,79,138)`
+(#1f4f8a), soit **7,57:1** contre le fond qu'il роди — il est posé à 2 px du
+bord, donc sur la surface qui accueille l'élément, pas sur le fond qu'il
+recouvre.
+
+Le parcours P2 a été refait à la main dans Chrome : depuis le début de la
+page, **16 tabulations** amènent le focus sur le bouton « Field » de la
+palette, et **Entrée** crée bien le champ (la carte passe de 2 parties à 3).
+Ce que le test fait en jsdom, donc, reproduit ce que fait le navigateur.
+
+## 5. Ce qui n'est pas contrôlé automatiquement, et pourquoi
 
 Le jsdom est un DOM sans navigateur : pas de mise en page, pas de styles
 calculés, pas de rendu réel. Ce qui suit reste **à vérifier à la
 main** avant d'annoncer la conformité :
 
-- **Le contraste dans un vrai rendu.** Le script raisonne sur le CSS seul : il
+- **Le contraste de l'encre d'agent.** Le script mesure l'accent #8a3d0a sur
+  son fond déduit (7,00 sur le papier, 7,50 sur un champ), et le fond réel
+  d'un champ marqué par un agent est bien le fond clair du panneau. Aucun
+  agent n'a pu écrire pendant la mesure (le relais n'a pas de modèle
+  disponible dans cet environnement) : le couple `.ink-agent input` et la
+  marque en marge `.ink-mark` n'ont donc **pas** été vus dans un vrai rendu.
+- **Le fond déduit par la cascade.** Le script raisonne sur le CSS seul : il
   déduit le fond d'un élément par la cascade (règle la plus spécifique qui
   s'applique, sinon le fond du parent, sinon celui de la page). Il ne voit
   pas le DOM rendu, donc un fond posé par une classe d'ancêtre non chaînée
@@ -131,7 +176,8 @@ main** avant d'annoncer la conformité :
   `.card-frame`), `.ink-mark` et l'indicateur « ◆ agent » du journal. Le
   script les mesure sur le fond de la page (8,50 et 7,00) alors que le fond
   réel est le panneau clair (9,11 et 7,50) : **les deux versions passent**,
-  mais la valeur exacte demande un navigateur.
+  mais la valeur exacte demande un navigateur — et, pour l'encre d'agent,
+  un agent qui écrit.
 - **La lecture d'écran réelle.** Le test calcule un nom accessible (aria,
   `label`, texte, titre) et vérifie qu'il n'est pas vide ; un lecteur
   d'écran réel calcule le sien, qui peut différer (notamment sur les
@@ -139,9 +185,6 @@ main** avant d'annoncer la conformité :
   des zones `aria-live` (le texte écrit par un agent, dans
   `apps/web/src/parts/FieldPartView.tsx`) et le rôle des onglets
   (`role="tab"`) se vérifient à l'oreille, avec VoiceOver ou NVDA.
-- **Le focus visible à l'écran.** jsdom ne calcule pas les styles : le test
-  vérifie que la règle existe, qu'elle porte un contour et qu'elle couvre
-  tous les types de contrôle ; que le contour soit *visible* se regarde.
 - **Le zoom à 400 % et le reflow** (WCAG 1.4.10) : le site a des règles de
   petite largeur (`@media (max-width: 420px)`), mais rien ne le vérifie
   automatiquement.
@@ -152,7 +195,7 @@ main** avant d'annoncer la conformité :
   exempts des seuils de contraste, comme le veut le WCAG. C'est un choix
   assumé, pas une mesure.
 
-## 5. Le parcours P2 au clavier
+## 6. Le parcours P2 au clavier
 
 Le parcours demandé par la recette est « créer un champ, créer un bouton
 depuis la palette ». Il est fait **au clavier seul** dans le test : Tab
@@ -165,9 +208,10 @@ jsdom n'active pas un bouton avec la touche Entrée : le test installe donc
 un **harnais clavier** (`apps/web/test/clavier.ts`) qui fait ce que fait un
 navigateur — Tab passe au contrôle suivant, Entrée et Espace activent le
 bouton qui a le focus. Ce qui est vérifié ensuite (l'action demandée au
-clavier aboutit) reste vrai dans un vrai navigateur.
+clavier aboutit) reste vrai dans un vrai navigateur : le parcours a été
+refait à la main dans Chrome (section 4).
 
-## 6. Reproduire
+## 7. Reproduire
 
 ```bash
 npm run typecheck                                   # 0 erreur
