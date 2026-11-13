@@ -64,6 +64,23 @@
       }
     },
     {
+      "fingerprint": "4403bf0fd0af16a24a2bc706d9610b9b0eeedbe07b051efed3abcb3068569f24",
+      "purpose": "write-script",
+      "response": {
+        "stop": "end",
+        "blocks": [
+          {
+            "type": "text",
+            "text": "{\"script\":\"on mouseUp\\n  put \\\"A visitor showed a silver amulet.\\\" after field \\\"Memory\\\"\\n  put \\\"alarmed\\\" into field \\\"Mood\\\"\\nend mouseUp\\n\",\"summary\":\"When the button is clicked, appends the sentence to the Memory field and sets the Mood field to \\\"alarmed\\\".\",\"assumptions\":[\"The existing mouseUp handler is replaced by this new behaviour.\",\"No extra separator is inserted before the appended Memory text.\"],\"questions\":[]}"
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    },
+    {
       "fingerprint": "71c53d5849b860cc9743bca102687b203ad431aeefeb990b593fa0a81524c187",
       "purpose": "agent-turn",
       "response": {
@@ -192,23 +209,6 @@
               "text": "alarmed",
               "mode": "replace"
             }
-          }
-        ],
-        "usage": {
-          "inputTokens": 1,
-          "outputTokens": 1
-        }
-      }
-    },
-    {
-      "fingerprint": "f767e4c6e530e9494e4c0548bfb389950b15654d57ad3b90c4ecfa421a3c401f",
-      "purpose": "write-script",
-      "response": {
-        "stop": "end",
-        "blocks": [
-          {
-            "type": "text",
-            "text": "{\"script\":\"on mouseUp\\n  put \\\"A visitor showed a silver amulet.\\\" after field \\\"Memory\\\"\\n  put \\\"alarmed\\\" into field \\\"Mood\\\"\\nend mouseUp\\n\",\"summary\":\"When the button is clicked, appends the sentence to the Memory field and sets the Mood field to \\\"alarmed\\\".\",\"assumptions\":[\"The existing mouseUp handler is replaced by this new behaviour.\",\"No extra separator is inserted before the appended Memory text.\"],\"questions\":[]}"
           }
         ],
         "usage": {
