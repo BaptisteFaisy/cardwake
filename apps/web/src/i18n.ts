@@ -58,11 +58,10 @@ const TEXTS: Record<string, string> = {
   "play.candle": "The agent of this card is awake",
   "play.candleOut": "The agent of this card is asleep",
   "play.noAgent": "This card has no agent.",
-  "play.scriptNotWired": "script not wired yet",
   "play.chatNotWired": "Agent turns are not wired yet: nothing was sent anywhere.",
   "play.locked": "Locked",
   "play.writtenByAgent": "written by an agent",
-  "play.notWiredHint": "Scripts are shown but not run yet.",
+  "play.notWiredHint": "it answers in this card's own fields, and never outside.",
 
   // Carte, mode Fabriquer (CAR-F-02, CAR-F-05)
   "build.title": "Build",
