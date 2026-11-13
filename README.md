@@ -86,13 +86,15 @@ numbers — every one of them has a command and a file behind it in
 |                                                          | 1 out of scope |                |
 |----------------------------------------------------------+----------------+----------------+
 | pull requests merged by the queue, no human click        | 44 of 45       | gh pr list     |
-| repository guards                                        | 378 files      | npm run guards |
+| repository guards                                        | 410 files      | npm run guards |
 |                                                          | 0 problems     |                |
 +----------------------------------------------------------+----------------+----------------+
 ```
 
-The pull-request count is a snapshot of 2026-11-13, 21:05 UTC: it grows with
-every merge, and `gh pr list --state merged` re-derives it.
+Two counts move as the work lands: the pull requests merged by the queue
+(snapshot of 2026-11-13, 21:05 UTC) and the number of files the guards
+control. Both are re-derived by the commands shown; what must not move is
+*0 problems*.
 
 Two of those numbers are ranges on purpose. The evaluation game is run with an
 **auto-routed** model (`combo/cheap`): the same sentence lands on a different

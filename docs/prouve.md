@@ -44,16 +44,20 @@ $ npm run typecheck
 
 ```sh
 $ python3 scripts/guards/run_all.py
-gardes : 378 fichier(s) contrôlé(s), 0 problème
+gardes : 410 fichier(s) contrôlé(s), 0 problème
 ```
+
+(410 is the number of files tracked by git on this branch at the time of
+writing; it grows with the repository. What the guard reports must stay
+*0 problème*.)
 
 The four guards are not decorative. They fail the build on a third-party
 trademark in product files, an API-key-shaped string anywhere in the tree,
 `eval(` / `new Function` / `.innerHTML =` / `dangerouslySetInnerHTML` /
 `document.write(` in `apps/`, `packages/` and `scripts/`, a source file over
 500 lines, or a function over 50 lines — and a tree without `.kiro/` is
-refused too. The count of 378 is the number of files tracked by git: the guard
-reads what is committed, not what happens to sit in the working tree.
+refused too. The count it prints is the number of files tracked by git: the
+guard reads what is committed, not what happens to sit in the working tree.
 
 ## 2. The 23 acceptance properties, each with a test
 
