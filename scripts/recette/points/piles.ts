@@ -17,12 +17,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseStackFile } from "@cardwake/model";
 import type { Stack } from "@cardwake/model";
-import { CassetteGateway, replayScenario } from "@cardwake/agent";
+import { CassetteGateway, DEMO_SCENARIOS, replayScenario } from "@cardwake/agent";
 import type { CassetteEntry } from "@cardwake/model";
 import type { Resultat } from "../types";
 import { ko, ok } from "../types";
 import { exec, lireDossier, piegerReseau, ROOT } from "../outils";
-import { SCENARIOS } from "../../cassettes/build";
 
 /** Les trois piles livrées et le clic que la commande `run` joue sur chacune. */
 const PILES: { nom: string; clic: string }[] = [
@@ -63,7 +62,7 @@ async function jouerLeClic(nom: string, clic: string): Promise<{ code: number | 
 /** Rejoue le parcours enregistré de la pile ; rend les réponses obtenues. */
 async function rejouerLeParcours(nom: string): Promise<string[]> {
   const { pile, cassette } = chargerPile(nom);
-  const etapes = SCENARIOS[nom as keyof typeof SCENARIOS];
+  const etapes = DEMO_SCENARIOS[nom as keyof typeof DEMO_SCENARIOS];
   const actions = etapes.map((etape) => etape.action);
   const rejeu = await replayScenario(pile, actions, cassette);
   return [...rejeu.replies];
