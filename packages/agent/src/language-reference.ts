@@ -12,6 +12,16 @@
  */
 
 import reference from "../../../docs/language.md?raw";
+import card from "../../../docs/language-card.md?raw";
 
 /** La référence complète du langage, telle qu'elle est imprimée aux deux IA. */
 export const LANGUAGE_REFERENCE: string = reference;
+
+/**
+ * La carte d'une page : les formes, les recettes et les pièges, lus AVANT la
+ * référence complète. Elle n'ajoute aucune forme au langage — ses extraits de
+ * code sont copiés de la référence, et un test le vérifie
+ * (`packages/agent/test/language-card.test.ts`). La référence reste la source
+ * unique : la carte est un sommaire, pas une seconde consigne.
+ */
+export const LANGUAGE_CARD: string = card;

@@ -5,7 +5,7 @@
  * Options :
  *   --relay <url>    relais local qui détient la clé (défaut : 8787)
  *   --model <nom>    modèle demandé au relais (défaut : combo/cheap)
- *   --family <nom>   une seule famille (calcul, chunks, navigation…)
+ *   --family <nom>   une famille (répétable : --family loops --family agents)
  *   --limit <n>      ne jouer que les n premières tâches
  *   --out <fichier>  où écrire le rapport JSON (défaut : docs/mesures/eval.json)
  *   --reference <f>  la référence du langage (défaut : docs/language.md)
@@ -19,6 +19,7 @@ import { dirname } from "node:path";
 import { loadTasks } from "./check";
 import { relayGateway, runGame } from "./runner";
 import type { GameReport } from "./runner";
+import { causeOf, familyTable, failureTable } from "./report";
 
 /** L'horloge du moteur : figée, pour que le jeu soit rejouable. */
 const FIXED_CLOCK = () => "1970-01-01T00:00:00.000Z";
@@ -27,7 +28,8 @@ const FIXED_CLOCK = () => "1970-01-01T00:00:00.000Z";
 type Options = {
   relay: string;
   model: string;
-  family: string | null;
+  /** Les familles demandées ; vide veut dire toutes. */
+  families: string[];
   limit: number | null;
   out: string;
   reference: string;
@@ -38,7 +40,7 @@ function defaults(): Options {
   return {
     relay: "http://127.0.0.1:8787/v1",
     model: "combo/cheap",
-    family: null,
+    families: [],
     limit: null,
     out: "docs/mesures/eval.json",
     reference: "docs/language.md",
@@ -53,7 +55,7 @@ export function parseOptions(argv: readonly string[]): Options {
     const value = argv[index + 1];
     if (flag === "--relay" && value !== undefined) options.relay = value;
     else if (flag === "--model" && value !== undefined) options.model = value;
-    else if (flag === "--family" && value !== undefined) options.family = value;
+    else if (flag === "--family" && value !== undefined) options.families.push(value);
     else if (flag === "--reference" && value !== undefined) options.reference = value;
     else if (flag === "--out" && value !== undefined) options.out = value;
     else if (flag === "--limit" && value !== undefined) {
@@ -64,29 +66,12 @@ export function parseOptions(argv: readonly string[]): Options {
   return options;
 }
 
-/** Le tableau du rapport, en markdown : une ligne par famille. */
-export function familyTable(report: GameReport): string {
-  const lines = [
-    "| famille | tâches | premier coup | après réparation | taux (après réparation) |",
-    "|---|---|---|---|---|",
-  ];
-  for (const [family, counts] of Object.entries(report.byFamily)) {
-    const rate = counts.total === 0 ? 0 : Math.round((counts.ok / counts.total) * 100);
-    lines.push(`| ${family} | ${counts.total} | ${counts.firstTry} | ${counts.ok} | ${rate} % |`);
-  }
-  return lines.join("\n");
-}
-
-/** Le tableau des échecs, en markdown : une ligne par tâche ratée. */
-export function failureTable(report: GameReport): string {
-  const lines = ["| tâche | statut | pourquoi |", "|---|---|---|"];
-  for (const outcome of report.tasks) {
-    if (outcome.status === "ok") continue;
-    const reason = outcome.failures[0] ?? outcome.errors[0] ?? "unknown";
-    lines.push(`| ${outcome.id} | ${outcome.status} | ${reason.replace(/\|/g, "/")} |`);
-  }
-  return lines.join("\n");
-}
+/**
+ * La première cause d'un échec, en clair. Un échec a toujours une cause, et
+ * ce n'est pas toujours le script : distinguer « le modèle n'a pas répondu »
+ * de « le script rend faux » est ce qui décide quoi corriger.
+ */
+export { causeOf, causesOf, familyTable, failureTable, topCause } from "./report";
 
 /** Écrit le rapport JSON, en créant le dossier si besoin. */
 function writeReport(path: string, report: GameReport): void {
@@ -103,7 +88,9 @@ async function main(argv: readonly string[]): Promise<number> {
     return 1;
   }
   let tasks = loaded.tasks;
-  if (options.family !== null) tasks = tasks.filter((task) => task.family === options.family);
+  if (options.families.length > 0) {
+    tasks = tasks.filter((task) => options.families.includes(task.family));
+  }
   if (options.limit !== null) tasks = tasks.slice(0, options.limit);
   const languageReference = readFileSync(options.reference, "utf8");
   console.log(`[eval] ${tasks.length} task(s), model ${options.model}, relay ${options.relay}`);
@@ -114,7 +101,9 @@ async function main(argv: readonly string[]): Promise<number> {
     clock: FIXED_CLOCK,
     model: options.model,
     onTask: (outcome) => {
-      const mark = outcome.status === "ok" ? "ok" : outcome.status;
+      // La cause compte autant que le verdict : « pile fausse » demande un
+      // autre script, « panne du modèle » demande de rejouer.
+      const mark = outcome.status === "ok" ? "ok" : `${outcome.status} — ${causeOf(outcome)}`;
       console.log(`[eval] ${outcome.id} — ${mark}${outcome.failures[0] ? ` — ${outcome.failures[0]}` : ""}`);
     },
   });

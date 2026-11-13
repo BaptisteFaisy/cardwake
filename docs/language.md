@@ -624,6 +624,134 @@ Rules without exception:
   declares the stack trusted. New agents start at level 2.
 - The card is the whole memory of the agent: no hidden history, no other store.
 
+## Recipes
+
+Four complete recipes, one per job that comes up most often. Each one is
+copyable: replace only the names between quotes by names that appear in the
+stack summary, keep every other word.
+
+### Recipe 1 — Walk the lines of a field and add up a column
+
+```text
+-- Button "Total": add up quantity x price for every line of field "Lines"
+on mouseUp
+  put 0 into total
+  repeat for each line row in field "Lines"
+    -- one turn per line; "Paper,3,4" gives item 2 = 3 and item 3 = 4
+    add item 2 of row * item 3 of row to total
+  end repeat
+  put round(total, 2) into field "Subtotal"
+end mouseUp
+```
+
+`repeat for each line row in field "X"` gives `row` the whole line, then the
+next one, and stops by itself: there is no counter to watch. To read one value
+inside a line, take an item: `item 2 of row`. Counting starts at 1, and `item 1`
+is the first item.
+
+### Recipe 2 — One value per line: build the list, then write it once
+
+This is the recipe for "one number per line", "a table of results", "the
+doubled amounts". Build the text in a variable, then write the variable once.
+
+```text
+-- Button "Double": double every line of field "Amounts", one per line
+on mouseUp
+  put empty into result
+  repeat for each line amount in field "Amounts"
+    if result is empty then
+      -- first line: no line break before it
+      put (amount * 2) into result
+    else
+      -- all the others: a line break, then the value
+      put result & return & (amount * 2) into result
+    end if
+  end repeat
+  put result into field "Doubled"
+end mouseUp
+```
+
+Two points make this recipe work, and both are easy to get wrong:
+
+- **`return` is the line break.** Join with `& return &`, never with a comma:
+  `","` would make one single line.
+- **A variable grows with `into`, not with `after`.** `put x after myVar`
+  REPLACES `myVar` with `x`: only a field and a chunk are appended with
+  `after`. To add to a variable, write the whole new value:
+  `put myVar & return & x into myVar`.
+
+Writing straight into the field also works: it appends to the field and drops
+the last line break.
+
+```text
+on mouseUp
+  put empty into field "Doubled"
+  repeat for each line amount in field "Amounts"
+    put (amount * 2) & return after field "Doubled"
+  end repeat
+  put char 1 to -2 of field "Doubled" into field "Doubled"
+end mouseUp
+```
+
+### Recipe 3 — A numbered table with `repeat with`
+
+```text
+-- Button "Draw": the five times table, one row per line
+on mouseUp
+  put empty into table
+  repeat with n = 1 to 5
+    if n = 1 then
+      put (n & " x 5 = " & (n * 5)) into table
+    else
+      put table & return & (n & " x 5 = " & (n * 5)) into table
+    end if
+  end repeat
+  put table into field "Table"
+end mouseUp
+```
+
+`repeat with n = 1 to 5` counts by itself. Piece the line together with `&`,
+and put an arithmetic expression in parentheses: `(n * 5)`.
+
+### Recipe 4 — Make the card's agent speak, and wake another card's agent
+
+```text
+-- Button "Draft": ask this card's agent and keep its answer
+on mouseUp
+  consult agent with "Write a short thank-you note about this order: " & field "Notes"
+  put it into field "Follow-up"
+end mouseUp
+```
+
+`consult agent with <text>` waits for the answer, and the answer is in `it` —
+nowhere else. Never read a field to find it: `put it into field "X"` is the
+whole hand-over. Give the agent the material it needs inside the text: it only
+sees its own card.
+
+```text
+-- Button "Send to kitchen": hand the order to ANOTHER card's agent
+on mouseUp
+  tell agent of card "Kitchen" "ORDER " & field "Order"
+  put "Sent." into field "Log"
+end mouseUp
+```
+
+`tell` does not wait and returns nothing: the other card's agent runs after the
+current handler ends, writes on its own card, and its answer cannot be read.
+`consult` when you need the answer, `tell` to hand work to another card.
+
+When the human types in the **chat bar**, the message goes straight to the
+card's agent: the persona answers and writes by itself, and a script attached to
+a field never sees that message. So a request like "when the visitor chats,
+greet them" needs no chat handling at all — keep the script minimal and let the
+persona work.
+
+```text
+on mouseUp
+  -- the chat goes straight to the card's agent: nothing to do here
+end mouseUp
+```
+
 ## Mistakes to avoid
 
 1. **Putting the value after the target in `add`.**
@@ -667,6 +795,13 @@ Rules without exception:
     Wrong: `send "compute" to this card` then reading the result on the next
     line — Right: the message is handled after the current handler ends; to
     get an answer immediately, call a function or `consult`.
+16. **Appending to a variable with `after`.**
+    Wrong: `put x after myVar` (this replaces `myVar` with `x`) — Right:
+    `put myVar & x into myVar`. Only fields and chunks are appended with
+    `after`.
+17. **Handling the chat with a script.**
+    Wrong: `on chat` … — Right: the chat bar talks to the card's agent, whose
+    persona answers; a script attached to a field never receives it.
 
 ## Ten complete examples
 

@@ -334,7 +334,7 @@ async function checkedDraft(
       scriptRequest(
         "repair-script",
         system,
-        [repairUserMessage(current.script, issuesText(issues))],
+        [repairUserMessage(current.script, issuesText(issues), request.stackSummary)],
         options,
       ),
     );
@@ -401,7 +401,7 @@ async function attempt(
     const problem = "- The answer was not the expected structured output (a JSON object with script, summary, assumptions and questions).";
     const repaired = await callModel(
       gateway,
-      scriptRequest("repair-script", draft.system, [repairUserMessage(responseText(first), problem)], options),
+      scriptRequest("repair-script", draft.system, [repairUserMessage(responseText(first), problem, request.stackSummary)], options),
     );
     parsed = parseDraft(responseText(repaired));
     if (parsed === null) return failed([issue("model-output", "The model did not return readable structured output.")]);
