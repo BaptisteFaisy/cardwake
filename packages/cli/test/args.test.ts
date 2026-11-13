@@ -64,7 +64,7 @@ describe("usage", () => {
     for (const word of [
       "cardwake", "live", "validate", "paraphrase", "cassette", "run", "mcp",
       "doctor", "new", "explain", "serve",
-      "--click", "--seed", "--object", "--card", "--say", "--relay", "--port", "--force", "--yes", "--json",
+      "--click", "--seed", "--object", "--card", "--say", "--relay", "--port", "--overwrite", "--yes", "--json",
     ]) {
       expect(text).toContain(word);
     }

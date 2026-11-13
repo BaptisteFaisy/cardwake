@@ -28,7 +28,7 @@ export function cliArgs(partial: Partial<CliArgs>): CliArgs {
   return {
     command: "", sub: null, positionals: [],
     click: null, object: null, seed: null, json: false, help: false,
-    force: false, yes: false, open: false, port: null, maxCalls: null,
+    overwrite: false, yes: false, open: false, port: null, maxCalls: null,
     ...partial,
   };
 }

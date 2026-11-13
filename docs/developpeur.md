@@ -198,7 +198,7 @@ stacks/first.json: new stack "first" — 1 card, 1 field, 1 button
 ```
 
 Le fichier produit passe `cardwake validate` tel quel. Un fichier existant
-n'est **pas** écrasé (code 1) sauf `--force`.
+n'est **pas** écrasé (code 1) sauf `--overwrite`.
 
 ### `cardwake explain script` — la relecture ligne à ligne
 
