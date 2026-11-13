@@ -44,10 +44,12 @@ prononciation des libellés, le passage du focus aux changements de contenu
 d'erreur des trois défenses de l'éditeur de phrase, et le comportement du
 journal à l'annulation.
 
-**Comment le noter** : une colonne ajoutée au tableau de `docs/recette.md` —
-point 12 passe de « contrôle automatique » à « contrôle automatique + passe
-humaine », avec la date, le lecteur d'écran et sa version. C'est la seule
-chose qui manque pour que la case soit honnête.
+**Comment le noter** : `docs/recette.md` est **généré** par
+`npx vite-node scripts/recette/recette.ts` — ne pas l'éditer à la main. Le
+point 12 est produit par `scripts/recette/points/presence.ts` : c'est là qu'il
+faut ajouter la passe humaine (date, lecteur d'écran, version, verdict), et le
+rapport se régénérera avec elle. C'est la seule chose qui manque pour que la
+case soit honnête.
 
 ### 2.2 La vidéo (montage, ~une journée)
 
