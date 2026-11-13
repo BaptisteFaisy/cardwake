@@ -28,7 +28,7 @@ permissions:
 jobs:
   ci:
     name: ci
-    runs-on: [self-hosted, linux, x64, cardwake-worker]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -40,16 +40,13 @@ jobs:
       # Runners self-hosted persistants : nettoyer le workspace, mais garder
       # `node_modules` — un `npm ci` complet à chaque PR ne tient pas dans le
       # budget de 5 minutes.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
       - name: Nettoyage du workspace (node_modules conservé)
         shell: bash
         run: git clean -ffdx -e node_modules -e '**/node_modules'
-
-      - name: Environnement
-        shell: bash
-        run: |
-          export PATH="$HOME/bin:/usr/local/bin:/usr/bin:$PATH"
-          echo "$HOME/bin" >> "$GITHUB_PATH"
-          node -v; npm -v; python3 -V
 
       - name: Dépendances
         shell: bash

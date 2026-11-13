@@ -25,7 +25,7 @@ permissions:
 jobs:
   build:
     name: build
-    runs-on: [self-hosted, linux, x64, cardwake-worker]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -33,13 +33,10 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Environnement
-        shell: bash
-        run: |
-          export PATH="$HOME/bin:/usr/local/bin:/usr/bin:$PATH"
-          echo "$HOME/bin" >> "$GITHUB_PATH"
-          node -v
-
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
       - name: Dépendances
         shell: bash
         run: |
