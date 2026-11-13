@@ -93,6 +93,12 @@ jobs:
         id: recette
         env:
           TIRAGES: ${{ inputs.tirages || '10000' }}
+          # `NO_COLOR=1` : en CI, vitest colorise sa sortie, et la recette lit
+          # les noms de tests dans cette sortie. Avec les codes ANSI, elle n'en
+          # voit aucun et les points 5, 6, 10 et 11 tombent au rouge alors que
+          # leurs tests passent (mesuré : 8/14 au lieu de 12/14). Sans couleur,
+          # la recette lit ce qu'elle doit lire.
+          NO_COLOR: "1"
         run: |
           set -o pipefail
           code=0
