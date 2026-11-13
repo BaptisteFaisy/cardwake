@@ -1,8 +1,9 @@
-# État du chantier — 11 novembre 2026, 21 h
+# État du chantier — 13 novembre 2026, 15 h
 
-Document écrit à la fin de la première session de construction. Il dit ce qui
-est en ligne, ce qui est prouvé par des tests, ce qui reste, et comment
-reprendre sans repartir de zéro.
+Mis à jour après la session du 13 novembre (relecture en clair, lanceur du jeu
+d'évaluation, mesures de performance, recette automatisée). Il dit ce qui est en
+ligne, ce qui est prouvé par des tests et par des mesures, ce qui reste, et
+comment reprendre sans repartir de zéro.
 
 ## 1. Infrastructure (terminée, vérifiée)
 
@@ -62,20 +63,21 @@ Les trois premières PR sont passées par la file et ont été mergées sans cli
 
 **Gardes CI** (`scripts/guards/run_all.py`) : constructions dangereuses, marques d'un tiers, clés en clair, fichiers < 500 lignes et fonctions < 50 lignes, présence de `.kiro/`.
 
-## 3. Ce qui reste, par lot
+## 3. Ce qui reste
 
-| Lot | Fichiers à écrire | Dépend de | Brief |
-|---|---|---|---|
-| C4a | `model/src/host.ts` : l'implémentation de `Host` (effets de script → opérations validées par `authorize` et journalisées) | `interpreter`, `ops`, `journal`, `authorize` | `/tmp/cw-briefs/dispatch.md` |
-| C4 | `model/src/dispatch.ts` (hiérarchie des messages, file, compteur de sauts, réveil de l'agent) | `host.ts` (C4a), interpréteur | `/tmp/cw-briefs/dispatch.md` |
-| C6 fin | `agent/src/loop.ts` (la boucle d'un tour) | `view.ts`, `tools.ts`, `budget.ts`, `queue.ts`, `gateway/*`, `dispatch.ts` | `/tmp/cw-briefs/loop.md` |
-| C7 | `agent/src/write-script.ts` (phrase → brouillon → contrôles → relecture → essai à blanc → accord) | `check.ts`, `paraphrase.ts`, `gateway/*` | `docs/language.md` + brief `lang.md` |
-| C1 fin | `lang/src/paraphrase.ts`, `lang/src/check.ts` | `ast.ts`, `print.ts` | `/tmp/cw-briefs/lang.md` |
-| C5 | `apps/web/**` (7 écrans, moteur réel branché sur `dispatch`) | tout le reste | `/tmp/cw-briefs/web.md` |
-| C8 fin | cassettes des trois piles (`stacks/*/cassette.json`) | `loop.ts` + `canon.ts` | — |
-| C9 | hébergement statique, accessibilité, réception | le site | — |
-| Outillage | `packages/cli` (`validate`, `run`, `paraphrase`, `cassette verify`, `eval compile`), serveur MCP | `lang` + `model` | — |
-| Évaluation | `evals/compile/` : les 40 tâches | `write-script.ts` | — |
+| Lot | État | Où |
+|---|---|---|
+| Éditeur de script + phrase → script dans l'écran | **en cours** — la chaîne existe (CLI, jeu d'évaluation) mais l'onglet Script du constructeur est encore en lecture seule | `apps/web/src/screens/CardBuild.tsx` |
+| Passe d'accessibilité au lecteur d'écran | à faire — le contrôle automatique existe | `apps/web/test/a11y.test.ts` |
+| Seconde cible du jeu d'évaluation (≥ 95 % après réparation) | non mesurée séparément : la chaîne répare une fois dans la tâche, la tâche est comptée une fois | `evals/runner.ts` |
+| Vidéo de trois minutes | hors périmètre (exclue par le demandeur) ; le script est livré | `docs/video-script.md` |
+| Cassettes des piles de démonstration | **périmées** (13 enregistrements) : à réenregistrer avant la démonstration | `stacks/*/cassette.json` |
+
+Ce qui est livré depuis la première session : le pont `host.ts` et le
+`Dispatcher`, la boucle d'agent, la chaîne phrase → script, les cassettes, la CLI
+complète, le serveur MCP, le relais local, le lanceur du jeu d'évaluation (85 %
+au premier coup sur 40 tâches), le banc de performance (toutes les cibles
+atteintes) et la recette automatisée.
 
 ## 4. Reprendre le travail
 
@@ -112,3 +114,15 @@ exige la mention libre `SAMVISION_ALLOW_GUARD_BUMP` dans le corps.
   `couche0` ; nommer les clés de test autrement.
 - **Runners r630** : la machine est très chargée (load 95 observé) ; le runner
   local du poste rend le verdict CI en 14 s, c'est lui qui a pris les runs.
+- **Le banc peut mentir.** Le premier passage du jeu d'évaluation a noté 70 % :
+  huit « échecs » étaient des défauts du lanceur, pas du modèle — les piles
+  portent un champ *et* un bouton du même nom, et le lanceur installait le
+  script sur le champ avant de cliquer dessus. Corrigé, le même modèle passe de
+  70 % à 85 %. Toujours comparer le script rendu à la pile finale avant de
+  croire un chiffre.
+- **Sortie structurée tronquée** : la référence du langage est longue ; un
+  plafond de 2 000 jetons coupait le JSON en pleine réponse et forçait une
+  réparation. Quatre mille jetons suffisent.
+- **Fournisseur lent** : `combo/cheap` ne répond pas toujours en 60 s ; le délai
+  d'attente du relais est réglable (`CARDWAKE_UPSTREAM_TIMEOUT_MS`) et reste à
+  60 s par défaut.
