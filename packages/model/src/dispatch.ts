@@ -86,7 +86,7 @@ export class Dispatcher {
   private readonly path: string[] = [];
   private readonly refusals: Verdict[] = [];
   /** État partagé par tous les hôtes d'une même action humaine. */
-  private shared: { stack: Stack } = { stack: undefined as unknown as Stack };
+  private shared: { stack: Stack };
 
   constructor(private readonly ctx: DispatchContext) {
     this.stack = ctx.stack;
