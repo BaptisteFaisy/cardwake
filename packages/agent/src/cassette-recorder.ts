@@ -15,6 +15,7 @@
  */
 
 import type { AgentTurnRequest, ModelHost, Stack, StackSettings } from "@cardwake/model";
+import type { Card, Part } from "@cardwake/model";
 import type { Determinism, Guards } from "@cardwake/lang";
 import { APP_LIMITS, Dispatcher, Journal, clampSettings, cloneStack } from "@cardwake/model";
 import { ActionBudgetTracker, SessionBudgetTracker } from "./budget";
@@ -22,7 +23,13 @@ import { CassetteGateway } from "./gateway/cassette";
 import { fingerprint } from "./gateway/canon";
 import { throwIfAborted } from "./gateway/http";
 import { runAgentTurn, type TurnOutcome } from "./loop";
+import { cardSummaryOf } from "./script-summary";
+import { LANGUAGE_REFERENCE } from "./language-reference";
+import { textResponse } from "./testing/fake-model";
+import { responseText } from "./types";
 import type { LlmGateway, LlmRequest, LlmResponse } from "./types";
+import { draftText, scriptDraftRequest } from "./write-script";
+import type { ModelDraft } from "./write-script";
 
 /** Graine et horloge figées : le même scénario rejoue le même état (CAR-P-20). */
 const RECORDER_SEED = 2026;
@@ -46,13 +53,38 @@ function recorderGuards(): Guards {
   };
 }
 
-/** Un parcours humain : un clic sur un bouton nommé, ou une phrase libre. */
-export type ScenarioAction =
-  | { kind: "click"; card: string; button: string }
-  | { kind: "chat"; card: string; text: string };
+/** Un clic sur un bouton nommé, sur une carte nommée. */
+export type ClickAction = { kind: "click"; card: string; button: string };
 
-/** Un parcours, avec les réponses du modèle écrites à la main, dans l'ordre. */
-export type ScenarioStep = { action: ScenarioAction; responses: readonly LlmResponse[] };
+/** Une phrase libre, envoyée à l'agent d'une carte nommée. */
+export type ChatAction = { kind: "chat"; card: string; text: string };
+
+/**
+ * Une demande de brouillon : la phrase de l'auteur, l'élément visé, et la
+ * réponse rendue par le modèle. L'enregistreur construit **exactement** la
+ * requête que l'écran enverrait, puis range cette réponse.
+ */
+export type DraftAction = {
+  kind: "draft";
+  /** La carte dont on écrit le script. */
+  card: string;
+  /** L'élément de cette carte dont on écrit le script. */
+  part: string;
+  /** La phrase de l'auteur, en clair. */
+  phrase: string;
+  /** La sortie structurée du modèle, telle qu'elle a été rendue. */
+  response: ModelDraft;
+};
+
+/** Un parcours humain : un clic, une phrase libre, ou une demande de brouillon. */
+export type ScenarioAction = ClickAction | ChatAction | DraftAction;
+
+/**
+ * Un parcours, avec les réponses du modèle écrites à la main, dans l'ordre.
+ * Une étape de brouillon porte sa réponse dans l'action : elle n'a pas de
+ * réponse écrite à part.
+ */
+export type ScenarioStep = { action: ScenarioAction; responses?: readonly LlmResponse[] };
 
 /** Un parcours enregistré : l'action, les empreintes captées, la réponse. */
 export type RecordedStep = { action: ScenarioAction; fingerprints: readonly string[]; reply: string };
@@ -65,9 +97,9 @@ export type ScenarioReplay = { replies: readonly string[]; stack: Stack };
 
 /** Un parcours, dit en anglais pour les messages d'erreur. */
 export function describeAction(action: ScenarioAction): string {
-  return action.kind === "chat"
-    ? `chat on card "${action.card}"`
-    : `click "${action.button}" on card "${action.card}"`;
+  if (action.kind === "chat") return `chat on card "${action.card}"`;
+  if (action.kind === "draft") return `draft for "${action.part}" on card "${action.card}"`;
+  return `click "${action.button}" on card "${action.card}"`;
 }
 
 /**
@@ -102,19 +134,54 @@ class ScriptedGateway implements LlmGateway {
 }
 
 /** Résout une carte par son nom ; erreur lisible sinon. */
-function cardIdOf(stack: Stack, name: string): number {
+function cardOf(stack: Stack, name: string): Card {
   const card = stack.cards.find((item) => item.name === name);
   if (!card) throw new Error(`No card "${name}" in stack "${stack.name}".`);
-  return card.id;
+  return card;
+}
+
+/** Résout une carte par son nom ; son identifiant suffice à la plupart des cas. */
+function cardIdOf(stack: Stack, name: string): number {
+  return cardOf(stack, name).id;
 }
 
 /** Résout un bouton par son nom sur une carte ; erreur lisible sinon. */
 function buttonIdOf(stack: Stack, cardName: string, buttonName: string): { cardId: number; partId: number } {
-  const cardId = cardIdOf(stack, cardName);
-  const card = stack.cards.find((item) => item.id === cardId);
-  const button = card?.parts.find((item) => item.kind === "button" && item.name === buttonName);
+  const card = cardOf(stack, cardName);
+  const button = card.parts.find((item) => item.kind === "button" && item.name === buttonName);
   if (!button) throw new Error(`No button "${buttonName}" on card "${cardName}".`);
-  return { cardId, partId: button.id };
+  return { cardId: card.id, partId: button.id };
+}
+
+/** Résout un élément par son nom : ceux de la carte, puis ceux de son fond. */
+function partOf(stack: Stack, card: Card, name: string): Part {
+  const background = stack.backgrounds.find((item) => item.id === card.background);
+  const part =
+    card.parts.find((item) => item.name === name) ??
+    background?.parts.find((item) => item.name === name);
+  if (!part) throw new Error(`No part "${name}" on card "${card.name}".`);
+  return part;
+}
+
+/**
+ * La requête de brouillon d'une étape de démonstration : exactement celle que
+ * l'écran enverrait — même résumé de pile, même référence du langage, même
+ * schéma de sortie, même plafond de jetons. Une seule construction, sinon les
+ * empreintes ne concorderaient jamais au rejeu.
+ */
+export function draftRequestOf(action: DraftAction, stack: Stack): LlmRequest {
+  const card = cardOf(stack, action.card);
+  const part = partOf(stack, card, action.part);
+  return scriptDraftRequest(
+    {
+      phrase: action.phrase,
+      objectKind: "part",
+      objectName: part.name,
+      stackSummary: cardSummaryOf(stack, card, part),
+      currentScript: part.script,
+    },
+    { languageReference: LANGUAGE_REFERENCE, stack, cardId: card.id },
+  );
 }
 
 /** Le harnais d'un scénario complet : la pile se modifie de parcours en parcours. */
@@ -162,7 +229,7 @@ class ScenarioRunner {
   }
 
   /** Un parcours : pose la passerelle et le budget, joue l'action, rend les tours. */
-  async step(action: ScenarioAction, gateway: LlmGateway): Promise<TurnOutcome[]> {
+  async step(action: ClickAction | ChatAction, gateway: LlmGateway): Promise<TurnOutcome[]> {
     this.gateway = gateway;
     this.action = new ActionBudgetTracker(this.settings);
     this.turns.length = 0;
@@ -179,6 +246,32 @@ class ScenarioRunner {
 /** Le dernier aboutissement d'un parcours : la réponse rendue à l'humain. */
 function lastReply(outcomes: readonly TurnOutcome[]): string {
   return outcomes.at(-1)?.reply ?? "";
+}
+
+/**
+ * Enregistre une demande de brouillon : la requête est celle de l'écran, mot
+ * pour mot, et la réponse est la sortie structurée du modèle mise dans un
+ * bloc texte JSON — la forme que lit le parseur de `write-script.ts`.
+ */
+function recordDraft(action: DraftAction, stack: Stack, cassette: CassetteGateway): RecordedStep {
+  const request = draftRequestOf(action, stack);
+  const fp = fingerprint(request);
+  if (cassette.has(fp)) {
+    throw new Error(`Recording "${describeAction(action)}" hit the same situation twice (${fp}): split the scenario.`);
+  }
+  const text = draftText(action.response);
+  cassette.record(request, textResponse(text));
+  return { action, fingerprints: [fp], reply: text };
+}
+
+/** Rejoue une demande de brouillon : la cassette rend la réponse enregistrée. */
+async function replayDraft(
+  action: DraftAction,
+  stack: Stack,
+  gateway: LlmGateway,
+): Promise<string> {
+  const response = await gateway.call(draftRequestOf(action, stack), new AbortController().signal);
+  return responseText(response);
 }
 
 /** La réponse du premier tour avorté d'un parcours, s'il y en a un. */
@@ -198,7 +291,11 @@ export async function recordScenario(stack: Stack, steps: readonly ScenarioStep[
   const recorded: RecordedStep[] = [];
   for (const step of steps) {
     const label = describeAction(step.action);
-    const scripted = new ScriptedGateway(step.responses, cassette, label);
+    if (step.action.kind === "draft") {
+      recorded.push(recordDraft(step.action, runner.current, cassette));
+      continue;
+    }
+    const scripted = new ScriptedGateway(step.responses ?? [], cassette, label);
     const outcomes = await runner.step(step.action, scripted);
     const refusal = refusalOf(outcomes);
     if (outcomes.length === 0 || refusal !== undefined || lastReply(outcomes) === "") {
@@ -222,6 +319,10 @@ export async function replayScenario(
   const runner = new ScenarioRunner(cloneStack(stack));
   const replies: string[] = [];
   for (const action of actions) {
+    if (action.kind === "draft") {
+      replies.push(await replayDraft(action, runner.current, gateway));
+      continue;
+    }
     const outcomes = await runner.step(action, gateway);
     replies.push(lastReply(outcomes));
   }

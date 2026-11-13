@@ -9,6 +9,10 @@
  * (`cardwake cassette verify`) jouent **exactement** les mêmes parcours. C'est
  * la seule façon de dire qu'un enregistrement est périmé : le rejouer sur la
  * pile d'aujourd'hui et comparer les empreintes demandées à celles enregistrées.
+ *
+ * Les étapes de brouillon y joignent la phrase de l'auteur et la réponse
+ * rendue par le modèle : le site s'en sert pour proposer une phrase qui
+ * fonctionne, sans clé et sans réseau.
  */
 
 import { recordScenario } from "./cassette-recorder";
@@ -30,8 +34,28 @@ const use = (name: ToolName, input: Record<string, unknown>): ReturnType<typeof 
 /** Une réponse finale : le personnage parle en une ou deux phrases. */
 const say = (text: string): ReturnType<typeof textResponse> => textResponse(text);
 
-/** Le manoir : l'amulette (le garde alerte la cuisinière), la clé, deux discussions. */
+/** Le manoir : le garde alerte la cuisinière (l'amulette), la clé, deux discussions. */
 const MANOR: ScenarioStep[] = [
+  {
+    // La démonstration de la feature du site : une phrase, un vrai brouillon.
+    // Posé EN PREMIER : la pile est vierge, comme elle l'est quand un juge
+    // ouvre le site et va voir l'onglet Script du bouton.
+    action: {
+      kind: "draft",
+      card: "Guard",
+      part: "Show the amulet",
+      phrase: 'When this button is clicked, write "A visitor showed a silver amulet." after the Memory field and put "alarmed" into the Mood field.',
+      response: {
+        script: 'on mouseUp\n  put "A visitor showed a silver amulet." after field "Memory"\n  put "alarmed" into field "Mood"\nend mouseUp\n',
+        summary: 'When the button is clicked, appends the sentence to the Memory field and sets the Mood field to "alarmed".',
+        assumptions: [
+          "The existing mouseUp handler is replaced by this new behaviour.",
+          "No extra separator is inserted before the appended Memory text.",
+        ],
+        questions: [],
+      },
+    },
+  },
   {
     action: { kind: "click", card: "Guard", button: "Show the amulet" },
     responses: [
@@ -62,6 +86,25 @@ const MANOR: ScenarioStep[] = [
 
 /** Les devis : la relance polie rédigée depuis les lignes de chaque client. */
 const QUOTES: ScenarioStep[] = [
+  {
+    // La démonstration de la feature du site, pour les devis aussi : la pile
+    // est vierge, comme quand un juge ouvre le site.
+    action: {
+      kind: "draft",
+      card: "Dupont",
+      part: "Draft",
+      phrase: 'When this button is clicked, put "Thank you for your request; we will confirm the prices tomorrow morning." into the Follow-up field.',
+      response: {
+        script: 'on mouseUp\n  put "Thank you for your request; we will confirm the prices tomorrow morning." into field "Follow-up"\nend mouseUp\n',
+        summary: "When the Draft button is clicked, the Follow-up field is set to the requested confirmation message.",
+        assumptions: [
+          'The button "Draft" receives mouseUp when clicked, and this script is attached to that button.',
+          'The requested text should replace the existing content of field "Follow-up".',
+        ],
+        questions: [],
+      },
+    },
+  },
   {
     action: { kind: "click", card: "Dupont", button: "Draft" },
     responses: [
@@ -96,6 +139,26 @@ export const DEMO_SCENARIOS: Record<StackName, readonly ScenarioStep[]> = {
 /** Le parcours d'une pile, ou `null` si le nom n'est pas un nom de pile connue. */
 export function scenariosFor(name: string): readonly ScenarioStep[] | null {
   return (DEMO_SCENARIOS as Record<string, readonly ScenarioStep[]>)[name] ?? null;
+}
+
+/**
+ * Les phrases de brouillon enregistrées pour une carte et un élément donnés.
+ *
+ * Le site s'en sert pour proposer une phrase qui a une réponse enregistrée :
+ * la liste vient des scénarios eux-mêmes, pas d'une seconde table de données
+ * que l'on devrait garder en phase.
+ */
+export function demoDraftPhrases(slug: string, card: string, part: string): string[] {
+  const steps = scenariosFor(slug);
+  if (steps === null) return [];
+  const phrases: string[] = [];
+  for (const step of steps) {
+    const action = step.action;
+    if (action.kind !== "draft") continue;
+    if (action.card !== card || action.part !== part) continue;
+    phrases.push(action.phrase);
+  }
+  return phrases;
 }
 
 /**
