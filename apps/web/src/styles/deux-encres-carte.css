@@ -64,6 +64,13 @@
   border-left: 4px solid var(--accent);
 }
 
+/* L'encre change quand l'agent écrit : la transition est coupée par
+   `prefers-reduced-motion` (12.4). */
+input,
+textarea {
+  transition: color 200ms ease, border-color 200ms ease;
+}
+
 .ink-mark {
   position: absolute;
   left: -0.9rem;
@@ -269,6 +276,18 @@
   border: 1px solid var(--ink);
   background: #fffdf8;
   padding: 0.4rem 0.6rem;
+  /* Une entrée qui arrive se pose en douceur — sauf si le mouvement est
+     réduit (12.4). */
+  animation: journal-fade 200ms ease-out;
+}
+
+@keyframes journal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .journal-entry .meta {
