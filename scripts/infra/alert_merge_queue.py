@@ -197,7 +197,7 @@ def analyser(repo: str, token: str, seuil: int, plafond: int, requis: tuple[str,
                 "url": pr.get("html_url") or "",
             })
         elif raison:
-            saines.append((numero, "bloquée depuis %d min (< seuil)" % minutes))
+            saines.append((numero, "bloquée depuis %d min (< seuil) : %s" % (minutes, raison)))
         else:
             saines.append((numero, "avance"))
     return bloquees, saines, illisibles
@@ -232,6 +232,59 @@ def trouver_commentaire(repo: str, numero: int, token: str) -> int | None:
         if MARQUE in (commentaire.get("body") or ""):
             return commentaire.get("id")
     return None
+
+
+def commentaires_recents(repo: str, token: str, heures: int = 6) -> list[dict]:
+    """Tous les commentaires du dépôt depuis N heures (marque d'alerte incluse).
+
+    Sert à retrouver nos propres commentaires sans parcourir chaque PR : une
+    alerte posée sur une PR qui a avancé depuis doit être retirée, sinon elle
+    affirme un blocage qui n'existe plus.
+    """
+    depuis = (maintenant() - dt.timedelta(hours=heures)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    trouves, page = [], 1
+    while page <= MAX_PAGES:
+        lot = api("/repos/%s/issues/comments?per_page=100&sort=created&direction=desc"
+                  "&since=%s&page=%d" % (repo, depuis, page), token) or []
+        trouves.extend(c for c in lot if MARQUE in (c.get("body") or ""))
+        if len(lot) < 100:
+            break
+        page += 1
+    return trouves
+
+
+def numero_de_commentaire(corps: dict) -> int | None:
+    """Numéro de la PR (ou de l'éventuel ticket) depuis `issue_url`."""
+    url = (corps.get("issue_url") or "").rstrip("/")
+    if not url:
+        return None
+    try:
+        return int(url.rsplit("/", 1)[-1])
+    except ValueError:
+        return None
+
+
+def retirer_alertes_perimees(repo: str, garde: set[int], token: str,
+                             seche: bool) -> int:
+    """Retire les commentaires d'alerte des PR qui ne sont plus bloquées.
+
+    Sans ça, une alerte posée à 10 h affirmerait encore à 18 h un blocage
+    résolu depuis longtemps. On ne touche jamais à autre chose que nos propres
+    commentaires (marque exacte) et jamais à ceux d'une PR encore bloquée ou
+    illisible (`garde`).
+    """
+    obsoletes = [c for c in commentaires_recents(repo, token)
+                 if numero_de_commentaire(c) not in garde]
+    if seche or not obsoletes:
+        return len(obsoletes)
+    retires = 0
+    for commentaire in obsoletes:
+        try:
+            api("/repos/%s/issues/comments/%s" % (repo, commentaire["id"]), token, "DELETE")
+            retires += 1
+        except Erreur as exc:
+            print("::warning::commentaire %s non retiré : %s" % (commentaire.get("id"), exc))
+    return retires
 
 
 def publier(repo: str, cible: dict, corps: str, token: str, seche: bool) -> str:
@@ -312,6 +365,14 @@ def main(argv: list[str] | None = None) -> int:
                            % (p["numero"], p["branche"], p["minutes"], p["raison"], action))
     else:
         rapport.append("aucune PR bloquée au-delà de %d min." % args.seuil)
+    obsoletes = retirer_alertes_perimees(
+        repo,
+        {p["numero"] for p in bloquees} | {n for n, _ in illisibles},
+        token, args.dry_run)
+    if obsoletes:
+        rapport.append("")
+        rapport.append("%d commentaire(s) d'alerte retiré(s) (PR qui n'est plus "
+                       "bloquée, ou disparue du lot examiné)." % obsoletes)
     if illisibles:
         rapport.append("")
         rapport.append("Illisibles (non jugées) : %s"
