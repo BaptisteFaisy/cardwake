@@ -1,47 +1,308 @@
-# Recette — état case par case au 11 novembre 2026
+# Recette — verdict point par point
 
-Chaque case de la recette du cahier, avec la commande ou le fichier qui la
-prouve, ou ce qui manque. Preuves vérifiées sur ce dépôt le **11 novembre
-2026** (run de propriétés à 10 000 tirages : voir
-`docs/rapport-proprietes.md` ; suite complète : 262 tests verts).
+Rejouée le **2026-11-13** sur le commit `6c5eb50d8b7d` (branche `feat/recette`).
 
-**Bilan : 8 cases cochées sur 18**, 10 non cochées (dont 3 partiellement
-prouvées au niveau des paquets, en attente du branchement applicatif).
+Chaque point est **exécuté**, pas relu : le tableau recopie ce que la commande a constaté. 10 point(s) vert(s), 3 rouge(s), 1 hors périmètre — sur 14 point(s).
 
-| # | Case | État | Preuve / manque |
+## Tableau des points
+
+| # | Point | Verdict | Résumé |
 |---|---|---|---|
-| 1 | Les 23 propriétés | **non cochée** (20/23) | `CARDWAKE_PROP_RUNS=10000 npx vitest run packages --reporter=basic` : 239 tests, 0 échec, 66,56 s. Manquent CAR-P-03 (`paraphrase.ts`), CAR-P-09 et CAR-P-14 (`dispatch.ts`) — détail dans `docs/rapport-proprietes.md`. |
-| 2 | `cassette verify` | **non cochée** | La fonction `verify()` existe et est testée (`packages/agent/src/gateway/cassette.ts`, `cassette.test.ts`, 10 tests) et le hook `scripts/hooks/cassette-verify.mjs` liste les enregistrements périmés. Manquent : la commande CLI (`packages/cli/src/index.ts` est une ébauche de 2 lignes) et les cassettes des piles. |
-| 3 | Les trois piles en mode enregistré sans requête réseau | **non cochée** | Les trois piles sont livrées et passent la validation telle quelle (`packages/model/test/schema-file.test.ts`, boucle sur `manor`/`quotes`/`dashboard`), et le site publié ne charge aucune ressource distante (garde de `.github/workflows/pages.yml`). Manque : `stacks/*/cassette.json` (lot C8 fin) — sans enregistrements, le mode enregistré n'a rien à rejouer. |
-| 4 | L'exemple du manoir : deux transactions et trois appels | **non cochée** | La pile est livrée : fond « Character » (Mood/Memory/Says verrouillé), cartes Guard et Cook avec agents éveillés de niveau 2, bouton « Show the amulet » dont le script fait `consult agent`. L'exécution réelle (les deux transactions, les trois appels enregistrés) attend `host.ts`, `dispatch.ts`, `loop.ts` et la cassette du manoir. |
-| 5 | Le taux du jeu d'évaluation | **non cochée** | `evals/compile/` est vide ; les 40 tâches et leur harnais attendent `write-script.ts` (lot C7). Taux : TO MEASURE (un passage complet avec clé réelle est estimé ≈ 2,40 $, coût réel TO MEASURE). |
-| 6 | Le faux modèle adversaire à 10 000 séquences | **cochée** | `packages/model/test/properties-authorize.test.ts` (« CAR-P-11 … résiste à un faux modèle adversaire ») et le générateur adversaire de `packages/agent/test/properties-gateway.test.ts` (« faux modèle adversaire (outils pour CAR-P-11/12) »), verts à `CARDWAKE_PROP_RUNS=10000` (run du 11/11/2026 : 1 184 ms et 2 988 ms, 0 contre-exemple). |
-| 7 | La pile piégée | **non cochée** | Les fondations sont prouvées : CAR-P-16 (le contexte ne contient ni clé, ni autre carte, ni journal — 4 tests verts à 10 000 tirages) et `view.test.ts` (« le contenu de la carte est une donnée »). Manque : le scénario de bout en bout — une pile reçue dont un champ contient des ordres, face à un agent réel — qui attend `loop.ts` (lot C6 fin). |
-| 8 | Recherche de `eval(` / `new Function` / `innerHTML` dans le site construit | **cochée** (avec nuance honnête) | Sources : `python3 scripts/guards/run_all.py` (garde `no-eval` du job `ci`) → 0 problème. Sur `apps/web/dist/assets/*.js` : `grep -oE` trouve 13 `dangerouslySetInnerHTML` et 5 `innerHTML` — motifs **internes au paquet React minifié**, aucun dans le code de l'application ; cas documenté dans `pages.yml`, qui garde le site publié sur ce qui le concerne : 0 ressource distante (`grep -Eo 'src="https?://\|href="https?://'` sur `dist/index.html` → vide). |
-| 9 | Recherche des marques et des motifs de clé | **cochée** | Gardes `trademarks` et `secrets` de `scripts/guards/run_all.py` (job `ci`) : 0 problème sur l'arbre. Vérification du site construit le 11/11/2026 : recherche insensible à la casse, sur `apps/web/dist/*`, des mots de la liste `THIRD_PARTY_WORDS` du garde (`scripts/hooks/lib.mjs`) → 0 occurrence ; `grep -cE` sur les motifs de clé du garde `secrets` (formes `sk-`, jetons GitHub, clés privées) → 0. Hooks équivalents côté agent : `trademark-guard.mjs`, `secret-guard.mjs`. |
-| 10 | Le budget épuisé | **cochée** | `packages/agent/test/budget.test.ts` (12 tests) et CAR-P-15 : « ne dépasse jamais les tours ni les jetons accordés », « gèle les compteurs de session une fois épuisés », « gèle les compteurs d'une action une fois épuisés » — verts à 10 000 tirages (run du 11/11/2026). |
-| 11 | L'export/import identique | **cochée** | CAR-P-18 dans `packages/model/test/schema-file.test.ts` : « exporter puis importer redonne la même pile », tout fichier altéré refusé en entier — vert à 10 000 tirages. Complété par CAR-P-22 (ni clé ni compteurs de session dans l'export, `properties-gateway.test.ts`). |
-| 12 | L'accessibilité | **non cochée** (partielle) | Attributs `aria-*`/`role` en place dans les écrans (`apps/web/src/App.tsx`, `screens/CardPlay.tsx`, `screens/Reception.tsx`, etc.) et règles dans le steering `two-inks.md`. Manquent : l'audit complet, le passage lecteur d'écran et les tests dédiés. Résultat d'audit : TO MEASURE. |
-| 13 | Les mesures de performance | **non cochée** | Aucun test ni script de performance dans le dépôt aujourd'hui. Mesures (ouverture d'une pile, opérations/seconde, chargement du site) : TO MEASURE. |
-| 14 | La présence de `.kiro` | **cochée** | `.kiro/specs/` (12 specs), `.kiro/hooks/hooks.json` (9 hooks), `.kiro/agents/` (3 agents), `.kiro/steering/`. Le garde `limits`/présence de `scripts/guards/run_all.py` vérifie `.kiro/` en CI. |
-| 15 | La licence | **non cochée** | Aucun fichier `LICENSE` à la racine du dépôt (`ls LICENSE*` → vide). Choix de licence à faire, puis fichier à ajouter. |
-| 16 | Le README | **cochée** | `README.md` à la racine, en anglais, avec la promesse du produit (« every card can host an AI agent, and that agent can never do more than the level a human gave it »). |
-| 17 | L'adresse en ligne | **cochée** | Site publié sur GitHub Pages : `https://tradoooo.github.io/cardwake/`, déployé à chaque push sur `main` par `.github/workflows/pages.yml` (build + artefact + garde « aucune ressource distante »). |
-| 18 | La vidéo | **non cochée** | Le script minuté est livré (`docs/video-script.md`, 2:58, plans + voix off, contraintes marques/musique respectées). Le tournage et le montage restent à faire ; les plans « manoir », « journal » et « phrase → script » attendent `dispatch.ts`/`loop.ts`/`write-script.ts` pour être filmés en vrai. |
+| 1 | Les 23 propriétés passent, graines consignées | **KO** | 1 propriété(s) sans identifiant dans les tests (CAR-P-09) |
+| 2 | `cassette verify` : aucun enregistrement périmé | **KO** | 13 enregistrement(s) périmé(s), 0 manquant(s) |
+| 3 | Les trois piles en mode enregistré, sans requête réseau | **OK** | les trois piles se jouent en mode enregistré, sans requête réseau |
+| 4 | L'exemple 7.13 : transactions, appels, Mood, annulations | **KO** | Mood « alarmed » puis « nervous » ; l'état de départ est restauré ; écart(s) : appels : 4 au lieu de 3 ; transactions : 3 au lieu de 2 ; annulations : 3 au lieu de 2 |
+| 5 | Faux modèle adversaire : 10 000 séquences, zéro dépassement | **OK** | faux modèle adversaire : 10 000 tirages, aucun dépassement de droits |
+| 6 | Pile piégée : pas d'écriture hors carte, boucle bornée | **OK** | l'agent n'écrit pas hors de sa carte, la boucle est bornée, aucune requête distante |
+| 7 | Recherche d'`eval`, de `new Function` et d'`innerHTML` dans le site construit | **OK** | aucun appel à `eval` ni à `new Function` dans le site construit ; les `innerHTML` relevés viennent du runtime React minifié, 0 dans le code du projet |
+| 8 | Marques de tiers dans le site construit et les piles | **OK** | aucune marque de tiers dans le site construit ni dans les piles |
+| 9 | Motif de clé dans le dépôt, les exports et le journal | **OK** | aucun motif de clé dans le dépôt, l'export ni le journal |
+| 10 | Budget épuisé : la passerelle ne reçoit plus d'appel | **OK** | budget épuisé : plus aucun appel à la passerelle |
+| 11 | Export puis import : mêmes fichiers canoniques | **OK** | export puis import : même pile, mise en forme canonique identique |
+| 12 | Accessibilité des sept écrans et parcours P2 au clavier | **OK** | 17 test(s) d'accessibilité verts (sept écrans + parcours P2 au clavier) |
+| 13 | `/.kiro`, licence, README, adresse en ligne | **OK** | `.kiro`, README et l'adresse en ligne sont conformes ; LICENSE absent (à créer — hors de ce lot) |
+| 14 | Vidéo de moins de trois minutes | hors périmètre | vidéo exclue par le demandeur : aucun tournage ni montage dans ce lot |
 
-## Commandes de vérification utilisées
+## Détail par point
 
-```bash
-cd /home/baptiste/Bureau/cardwake
-CARDWAKE_PROP_RUNS=10000 npx vitest run packages --reporter=basic   # cases 1, 6, 10, 11
-npx vitest run --reporter=basic                                     # 262 tests, 2,81 s
-python3 scripts/guards/run_all.py                                   # cases 8, 9, 14
-grep -oE 'src="https?://|href="https?://' apps/web/dist/index.html  # case 8 (vide)
+### 1. Les 23 propriétés passent, graines consignées
+
+**Verdict : KO** — 1 propriété(s) sans identifiant dans les tests (CAR-P-09)
+
+Commande : `CARDWAKE_PROP_RUNS=2000 npx vitest run packages --reporter=basic`
+
+```text
+tests de propriétés : verts
+identifiants couverts : CAR-P-01, CAR-P-02, CAR-P-03, CAR-P-04, CAR-P-05, CAR-P-06, CAR-P-07, CAR-P-08, CAR-P-10, CAR-P-11, CAR-P-12, CAR-P-13, CAR-P-14, CAR-P-15, CAR-P-16, CAR-P-17, CAR-P-18, CAR-P-19, CAR-P-20, CAR-P-21, CAR-P-22, CAR-P-23
+identifiants absents des tests : CAR-P-09
+  CAR-P-09 : aucune occurrence dans un fichier *.test.ts
+  CAR-P-09 est pourtant approchée par packages/model/test/dispatch.test.ts (« hiérarchie des messages ») : le parcours cible→carte→fond→pile y est joué, mais ni `pass` ni une propriété fast-check sur le placement des handlers n'y figurent.
 ```
 
-## Rappel des trous (TO MEASURE)
 
-Taux du jeu d'évaluation (case 5), coût réel d'un passage d'évaluation,
-audit d'accessibilité (case 12), mesures de performance (case 13), choix de
-licence (case 15). Aucun chiffre de ce document n'est inventé : chaque valeur
-vient d'une commande exécutée le 11 novembre 2026 ou d'un fichier du dépôt.
+### 2. `cassette verify` : aucun enregistrement périmé
+
+**Verdict : KO** — 13 enregistrement(s) périmé(s), 0 manquant(s)
+
+Commande : `npx vite-node packages/cli/src/main.ts cassette verify`
+
+```text
+stacks/dashboard/stack.json: stale 844082402c7ccaad827e0751b4138c011ac0d864050c20ed417908ebb8bfba9e
+stacks/manor/stack.json: stale 0ea0f3ee95066b3fff1a327a166c272649a431a6b6ef7da8b51fe5c0bcc65f11
+stacks/manor/stack.json: stale 21e0b92ac4813d713fd86dc57218d10fa74393d82412db52d33662710eac5e80
+stacks/manor/stack.json: stale 2d1557b23b3d48e6e57a97668177fcd0612ba66a3ee2760f47a3688bb523098e
+stacks/manor/stack.json: stale 71c53d5849b860cc9743bca102687b203ad431aeefeb990b593fa0a81524c187
+stacks/manor/stack.json: stale a1e3a50c7de9d84928f8a2caa205824ce64a65abfe5423b88f2e23a17a1a25c6
+stacks/manor/stack.json: stale abd94fe3149dd1463bffba3d64975c0fd7c971358584e93cd95a26f374af58e4
+stacks/manor/stack.json: stale ccfa35d14ede2497c84af5c18209b6f0f0ca2d41e01dc82bcc6890ef6a1da05e
+stacks/manor/stack.json: stale da31d337e4d514010d2ea28630e529d3376332258b24b80397ca0d7438f098a9
+stacks/manor/stack.json: stale e47a3f59712574efd8cf4a5c235b32ef89f4703ba6938c6eb1eefe9b02c72efd
+stacks/manor/stack.json: stale ee4b8dc7e6dfbfe0b6278a1322be9c2c4b9ed5568534e79bf45cf502aaee4d44
+stacks/quotes/stack.json: stale 3573185cec9330c96f109b2327b8112203fe9b582004e8eec5ced58364e44c7c
+stacks/quotes/stack.json: stale 72dbec760839c51b34660ec2e23ef1b5bcf9612107b0f491ad7691f72faa0737
+diagnostic : `stackSituations` n'est pas exporté par @cardwake/agent : la liste des situations attendues est vide, donc tout enregistrement est vu comme périmé
+```
+
+
+### 3. Les trois piles en mode enregistré, sans requête réseau
+
+**Verdict : OK** — les trois piles se jouent en mode enregistré, sans requête réseau
+
+Commande : `cardwake run + rejeu de cassette`
+
+```text
+cardwake run manor --click "Guard/Show the amulet" → code 0
+    click on button "Show the amulet" of card "Guard" (seed 1) — 1 operation(s)
+      write into part 5 of card 10: "" becomes "The card did not answer."
+cardwake run quotes --click "Dupont/Total" → code 0
+    click on button "Total" of card "Dupont" (seed 1) — 3 operation(s)
+      write into part 6 of card 10: "" becomes "150"
+      write into part 7 of card 10: "" becomes "15"
+      write into part 8 of card 10: "" becomes "165"
+cardwake run dashboard --click "Week/Summarise my week" → code 0
+    click on button "Summarise my week" of card "Week" (seed 1) — 2 operation(s)
+      write into part 14 of card 10: "" becomes "The card did not answer."
+      write into part 15 of card 10: "" becomes "1/1/70"
+rejeu enregistré manor → 4 réponse(s) : Let the master see it, then. The key stays where it sleeps. | The silver key opens the pantry, and the pantry keeps its own secrets. | Nobody is expected on a night like this. Give a name the house remembers. | Bread for
+rejeu enregistré quotes → 2 réponse(s) : Dear Mr Dupont, thank you for your request. I will confirm the tap replacement and pipe joint prices tomorrow morning. | Dear Mr Martin, thank you for your enquiry. I will confirm the boiler service price tomorrow mornin
+rejeu enregistré dashboard → 1 réponse(s) : On Monday you made two calls and finished one repair. Wednesday brought a late delivery from the supplier. Friday went to paperwork.
+imports réseau (node:http/https/net/tls/dgram) dans packages/lang, packages/model et packages/agent : aucun
+accès réseau direct hors mode enregistré (2), jamais instanciés au rejeu :
+    packages/agent/src/gateway/http.ts:366 — const doFetch: FetchLike = options.fetchImpl ?? globalThis.fetch;
+    packages/agent/src/gateway/relay-local.ts:80 — const doFetch: FetchLike = fetchImpl ?? (globalThis.fetch as unknown as FetchLike);
+tentatives de requête réseau pendant la recette : 0
+```
+
+
+### 4. L'exemple 7.13 : transactions, appels, Mood, annulations
+
+**Verdict : KO** — Mood « alarmed » puis « nervous » ; l'état de départ est restauré ; écart(s) : appels : 4 au lieu de 3 ; transactions : 3 au lieu de 2 ; annulations : 3 au lieu de 2
+
+Commande : `scripts/recette/exemples/manoir-713.ts`
+
+```text
+appels au modèle : 4 (le cahier en attend 3)
+transactions au journal : 3 (le cahier en attend 2)
+humeur du garde : "alarmed" (attendu "alarmed")
+humeur de la cuisinière : "nervous" (attendu "nervous")
+annulations pour revenir à l'état de départ : 3 (le cahier en attend 2)
+état de départ restauré : oui
+  #1 agent — agent turn on card "Guard" — 2 opération(s)
+  #2 script — mouseUp on button "Show the amulet" — 1 opération(s)
+  #3 agent — agent turn on card "Cook" — 2 opération(s)
+écart 1 : la boucle d'agent rappelle le modèle une fois de plus après une réponse à outils (Mood « nervous » puis un dernier appel pour la phrase finale).
+écart 2 : chaque tour d'agent est sa propre transaction du journal ; le `put it into field "Says"` du script en ouvre une troisième.
+écart 3 : conséquence des deux précédents, il faut trois annulations pour revenir à l'état de départ.
+```
+
+
+### 5. Faux modèle adversaire : 10 000 séquences, zéro dépassement
+
+**Verdict : OK** — faux modèle adversaire : 10 000 tirages, aucun dépassement de droits
+
+Commande : `CARDWAKE_PROP_RUNS=10000 npx vitest run packages/agent/test/loop-adversary.test.ts`
+
+```text
+tirages : CARDWAKE_PROP_RUNS=10000 par propriété, 1 propriété(s) fast-check
+code de sortie 0 — 3 test(s) vert(s), 0 échec(s)
+  ✓ aucune suite de coups ne sort du niveau ni ne change les droits
+  ✓ un appel hors niveau reçoit une raison en anglais et n'est pas exécuté
+  ✓ adversaire intégré au faux modèle : arguments farfelus, garde solide quand même
+```
+
+
+### 6. Pile piégée : pas d'écriture hors carte, boucle bornée
+
+**Verdict : OK** — l'agent n'écrit pas hors de sa carte, la boucle est bornée, aucune requête distante
+
+Commande : `npx vitest run packages/agent/test/loop.test.ts`
+
+```text
+code de sortie 0 — 16 test(s) vert(s), 0 échec(s)
+  ✓ envoie un message à une autre carte via host.tell
+  ✓ le plafond d'itérations est respecté
+  ✓ un champ verrouillé refuse l'écriture
+  ✓ un champ d'une autre carte n'est pas atteint, même au niveau 5
+  ✓ la requête ne porte que les quatre blocs
+aucune requête distante : la requête d'agent ne porte que les quatre blocs (test « la requête ne porte que les quatre blocs »)
+```
+
+
+### 7. Recherche d'`eval`, de `new Function` et d'`innerHTML` dans le site construit
+
+**Verdict : OK** — aucun appel à `eval` ni à `new Function` dans le site construit ; les `innerHTML` relevés viennent du runtime React minifié, 0 dans le code du projet
+
+Commande : `npm run build --workspace @cardwake/web`
+
+```text
+commande : npm run build --workspace @cardwake/web (code 0)
+fichiers du site construit : 3 (css, html, js)
+-- site construit (apps/web/dist) --
+eval() — aucun texte n'est exécuté comme code : 0
+new Function() — aucun texte n'est exécuté : 0
+innerHTML — aucun rendu HTML depuis le contenu d'une pile : 4
+dangerouslySetInnerHTML — injection HTML : 18
+document.write — injection HTML : 0
+innerHTML (motif large, toute occurrence) : 10
+-- sources du projet (apps/, packages/, hors dist) --
+eval() — aucun texte n'est exécuté comme code : 0
+new Function() — aucun texte n'est exécuté : 0
+innerHTML — aucun rendu HTML depuis le contenu d'une pile : 0
+dangerouslySetInnerHTML — injection HTML : 0
+document.write — injection HTML : 0
+```
+
+
+### 8. Marques de tiers dans le site construit et les piles
+
+**Verdict : OK** — aucune marque de tiers dans le site construit ni dans les piles
+
+Commande : `python3 scripts/guards/run_all.py`
+
+```text
+garde : verte — gardes : 348 fichier(s) contrôlé(s), 0 problème
+HyperCard : 0
+HyperTalk : 0
+\bApple\b : 0
+Macintosh : 0
+piles copiées dans le site construit : non
+```
+
+
+### 9. Motif de clé dans le dépôt, les exports et le journal
+
+**Verdict : OK** — aucun motif de clé dans le dépôt, l'export ni le journal
+
+Commande : `python3 scripts/guards/run_all.py`
+
+```text
+garde « secrets » : verte — gardes : 348 fichier(s) contrôlé(s), 0 problème
+```
+
+
+### 10. Budget épuisé : la passerelle ne reçoit plus d'appel
+
+**Verdict : OK** — budget épuisé : plus aucun appel à la passerelle
+
+Commande : `npx vitest run packages/agent/test/budget.test.ts packages/agent/test/loop.test.ts`
+
+```text
+code de sortie 0 — 28 test(s) vert(s), 0 échec(s)
+  ✓ part avec tout son budget
+  ✓ compte les tours et refuse au-delà du réglage
+  ✓ refuse dès que les jetons d'entrée sont épuisés
+  ✓ plafonne les jetons au réglage, jamais au-delà
+  ✓ ne bouge plus une fois épuisé
+  ✓ ignore un nombre de jetons absurde
+  ✓ s'endort avec un réglage à zéro
+  ✓ accorde les sauts et les tours de l'action
+  ✓ remet le message aux scripts quand les sauts sont épuisés
+  ✓ borne la largeur d'un tour : huit tours d'agent au plus par action
+  ✓ ne consomme plus rien une fois épuisé
+  ✓ refuse un tour quand les sauts sont déjà épuisés
+  ✓ le plafond d'itérations est respecté
+  ✓ budget de session épuisé : plus AUCUN appel à la passerelle
+  ✓ budget de session en cours de tour : la passerelle n'est plus rappelée
+```
+
+
+### 11. Export puis import : mêmes fichiers canoniques
+
+**Verdict : OK** — export puis import : même pile, mise en forme canonique identique
+
+Commande : `npx vitest run packages/model/test/schema-file.test.ts`
+
+```text
+code de sortie 0 — 15 test(s) vert(s), 0 échec(s)
+  ✓ sérialise de façon canonique, quel que soit l'ordre des clés
+  ✓ exporter puis importer redonne la même pile (CAR-P-18)
+```
+
+
+### 12. Accessibilité des sept écrans et parcours P2 au clavier
+
+**Verdict : OK** — 17 test(s) d'accessibilité verts (sept écrans + parcours P2 au clavier)
+
+Commande : `npx vitest run apps/web/test/a11y.test.ts --reporter=verbose`
+
+```text
+code de sortie 0 — 17 test(s) vert(s), 0 échec(s)
+  ✓ Étagère : aucun écart
+  ✓ Carte, mode Jouer : aucun écart
+  ✓ Carte, mode Fabriquer : aucun écart
+  ✓ Journal : aucun écart
+  ✓ Réception : aucun écart
+  ✓ Réglages : aucun écart
+  ✓ Espion : aucun écart
+  ✓ Preuves : aucun écart
+  ✓ Étagère : ordre de tabulation et libellés
+  ✓ Carte, mode Jouer : ordre de tabulation et libellés
+  ✓ Carte, mode Fabriquer : ordre de tabulation et libellés
+  ✓ Journal : ordre de tabulation et libellés
+  ✓ Réception : ordre de tabulation et libellés
+  ✓ Réglages : ordre de tabulation et libellés
+  ✓ Espion : ordre de tabulation et libellés
+  ✓ Preuves : ordre de tabulation et libellés
+  ✓ parcours P2 : créer un champ puis un bouton depuis la palette
+```
+
+
+### 13. `/.kiro`, licence, README, adresse en ligne
+
+**Verdict : OK** — `.kiro`, README et l'adresse en ligne sont conformes ; LICENSE absent (à créer — hors de ce lot)
+
+Commande : `curl -s -o /dev/null -w "%{http_code}" https://tradoooo.github.io/cardwake/`
+
+```text
+.kiro/ présent : oui
+.kiro/ ignoré par git : non
+.kiro/ suivi par git : oui (47 fichier(s))
+LICENSE à la racine : ABSENT — à créer (hors de ce lot)
+README.md : présent
+GET https://tradoooo.github.io/cardwake/ → HTTP 200
+```
+
+
+### 14. Vidéo de moins de trois minutes
+
+**Verdict : HORS PERIMETRE** — vidéo exclue par le demandeur : aucun tournage ni montage dans ce lot
+
+```text
+la recette coche « hors périmètre » et ne fait rien d'autre
+```
+
+
+## Comment la relancer
+
+```bash
+npx vite-node scripts/recette/recette.ts
+```
+
+Le script est idempotent et sans réseau (sauf le `HEAD` du point 13). Il rend un
+code de sortie non nul dès qu'un point obligatoire est rouge.
+
+## Ce que le rapport ne prouve pas
+
+- Le taux du jeu d'évaluation (cahier 7.7) : hors de ce lot, à mesurer avec une clé réelle.
+- Les mesures de performance de CAR-N-04 et CAR-N-05 : hors de ce lot.
+- La vidéo de moins de trois minutes : hors périmètre par décision du demandeur.
