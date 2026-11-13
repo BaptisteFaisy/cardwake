@@ -66,10 +66,13 @@ export function parseOptions(argv: readonly string[]): Options {
 
 /** Le tableau du rapport, en markdown : une ligne par famille. */
 export function familyTable(report: GameReport): string {
-  const lines = ["| famille | tâches | réussies | taux |", "|---|---|---|---|"];
+  const lines = [
+    "| famille | tâches | premier coup | après réparation | taux (après réparation) |",
+    "|---|---|---|---|---|",
+  ];
   for (const [family, counts] of Object.entries(report.byFamily)) {
     const rate = counts.total === 0 ? 0 : Math.round((counts.ok / counts.total) * 100);
-    lines.push(`| ${family} | ${counts.total} | ${counts.ok} | ${rate} % |`);
+    lines.push(`| ${family} | ${counts.total} | ${counts.firstTry} | ${counts.ok} | ${rate} % |`);
   }
   return lines.join("\n");
 }
@@ -118,8 +121,11 @@ async function main(argv: readonly string[]): Promise<number> {
   report.startedAt = new Date().toISOString();
   writeReport(options.out, report);
   const rate = report.total === 0 ? 0 : Math.round((report.ok / report.total) * 100);
+  const firstRate = report.total === 0 ? 0 : Math.round((report.okFirstTry / report.total) * 100);
   console.log(`\n${familyTable(report)}\n`);
-  console.log(`[eval] ${report.ok}/${report.total} réussies (${rate} %), ${report.calls} appels de modèle`);
+  console.log(`[eval] premier coup : ${report.okFirstTry}/${report.total} (${firstRate} %)`);
+  console.log(`[eval] après une réparation : ${report.ok}/${report.total} (${rate} %) — ${report.repaired} réparation(s)`);
+  console.log(`[eval] ${report.calls} appels de modèle`);
   console.log(`[eval] rapport écrit dans ${options.out}`);
   if (report.ok < report.total) console.log(`\n${failureTable(report)}`);
   return 0;

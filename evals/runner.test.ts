@@ -112,6 +112,23 @@ describe("runTask", () => {
     expect(outcome.status).toBe("ok");
   });
 
+  it("asks the model to repair the script once, with what the stack showed", async () => {
+    // Le faux modèle répond d'abord par un script faux, puis par le bon : la
+    // réparation est demandée avec ce que la pile a réellement montré.
+    const model = new FakeModel({
+      responses: [
+        textResponse(JSON.stringify({ script: WRONG_SCRIPT, summary: "a", assumptions: [], questions: [] })),
+        textResponse(JSON.stringify({ script: GOOD_SCRIPT, summary: "b", assumptions: [], questions: [] })),
+      ],
+    });
+    const outcome = await runTask(taskOf("calcul-01"), optionsFor(model));
+    expect(outcome.status).toBe("ok");
+    expect(outcome.firstTry).toBe(false);
+    expect(outcome.repaired).toBe(true);
+    expect(outcome.attempts).toBe(2);
+    expect(model.callCount).toBe(2);
+  });
+
   it("counts the calls it makes to the model", async () => {
     const model = modelWith(GOOD_SCRIPT);
     const outcome = await runTask(taskOf("calcul-01"), optionsFor(model));
