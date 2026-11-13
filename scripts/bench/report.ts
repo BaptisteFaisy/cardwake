@@ -9,7 +9,7 @@
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { arch, cpus, hostname, platform, release, totalmem } from "node:os";
+import { arch, cpus, hostname, loadavg, platform, release, totalmem } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { median, p95 } from "./mesure";
@@ -48,6 +48,8 @@ export type MachineInfo = {
   processeur: string;
   coeurs: number;
   memoireGo: number;
+  /** Charge système (1, 5 et 15 minutes) au moment du relevé : lit le p95. */
+  charge: number[];
   node: string;
   v8: string;
 };
@@ -81,6 +83,9 @@ export function machineInfo(): MachineInfo {
     processeur: cpuModel(),
     coeurs: cpus().length,
     memoireGo: Math.round(totalmem() / 1024 ** 3),
+    // La charge dit si les chiffres ont été pris sur une machine au repos :
+    // c'est ce qui explique un p95 plus haut que la médiane.
+    charge: loadavg().map((value) => Math.round(value * 100) / 100),
     node: process.version,
     v8: process.versions.v8,
   };
@@ -149,6 +154,7 @@ function configTable(machine: MachineInfo, seed: number): string {
     `| Système | ${machine.systeme} |`,
     `| Processeur | ${machine.processeur} (${machine.coeurs} cœurs) |`,
     `| Mémoire | ${machine.memoireGo} Go |`,
+    `| Charge système | ${machine.charge.join(" / ")} (1 / 5 / 15 min) |`,
     `| Node | ${machine.node} (V8 ${machine.v8}) |`,
     `| Graine du banc | ${seed} (fixe) |`,
   ].join("\n");
@@ -192,7 +198,8 @@ function headOf(mesures: Mesure[], machine: MachineInfo, options: ReportOptions)
       "sur la machine décrite ci-dessous. Chaque cible du cahier des charges est " +
       "comparée à sa valeur mesurée ; le verdict porte sur la **médiane**, et le p95 " +
       "montre la dispersion. Aucun chiffre de ce fichier n'est recopié à la main : " +
-      "il est réécrit à chaque exécution du banc.",
+      "il est réécrit à chaque exécution du banc. La charge système est relevée avec " +
+      "la configuration : c'est elle qui explique qu'un p95 dépasse parfois la médiane.",
     "",
     "## Configuration",
     "",

@@ -1,6 +1,6 @@
 # Mesures de performance — CAR-N-04 et CAR-N-05
 
-Mesures prises le **2026-11-13T13:16:47.901Z** par le banc `scripts/bench/bench.ts`, sur la machine décrite ci-dessous. Chaque cible du cahier des charges est comparée à sa valeur mesurée ; le verdict porte sur la **médiane**, et le p95 montre la dispersion. Aucun chiffre de ce fichier n'est recopié à la main : il est réécrit à chaque exécution du banc.
+Mesures prises le **2026-11-13T13:22:16.898Z** par le banc `scripts/bench/bench.ts`, sur la machine décrite ci-dessous. Chaque cible du cahier des charges est comparée à sa valeur mesurée ; le verdict porte sur la **médiane**, et le p95 montre la dispersion. Aucun chiffre de ce fichier n'est recopié à la main : il est réécrit à chaque exécution du banc. La charge système est relevée avec la configuration : c'est elle qui explique qu'un p95 dépasse parfois la médiane.
 
 ## Configuration
 
@@ -10,6 +10,7 @@ Mesures prises le **2026-11-13T13:16:47.901Z** par le banc `scripts/bench/bench.
 | Système | linux 7.0.0-43-generic x64 |
 | Processeur | 11th Gen Intel(R) Core(TM) i5-11600K @ 3.90GHz (12 cœurs) |
 | Mémoire | 31 Go |
+| Charge système | 33.77 / 33.71 / 29.24 (1 / 5 / 15 min) |
 | Node | v26.9.0 (V8 14.6.202.34-node.32) |
 | Graine du banc | 20261113 (fixe) |
 
@@ -17,11 +18,11 @@ Mesures prises le **2026-11-13T13:16:47.901Z** par le banc `scripts/bench/bench.
 
 | Cible | Mesure | Médiane | p95 | Tours | Seuil | Verdict |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| CAR-N-04 | Changement de carte | 0.006 ms | 0.106 ms | 200 | < 50 ms | atteint |
-| CAR-N-04 | Ouverture d'une pile de 100 cartes | 1.25 ms | 6.54 ms | 30 | < 1000 ms | atteint |
-| CAR-N-04 | Analyse d'un script de 200 lignes | 0.535 ms | 3.11 ms | 300 | < 20 ms | atteint |
-| CAR-N-04 | Étapes d'interprétation par seconde | 1 328 340 étapes/s | 1 695 864 étapes/s | 12 | ≥ 200 000 étapes/s | atteint |
-| CAR-N-05 | Délai entre un événement et l'indication visible | 0.046 ms | 0.125 ms | 100 | < 100 ms | atteint |
+| CAR-N-04 | Changement de carte | 0.004 ms | 0.006 ms | 200 | < 50 ms | atteint |
+| CAR-N-04 | Ouverture d'une pile de 100 cartes | 1.10 ms | 9.07 ms | 30 | < 1000 ms | atteint |
+| CAR-N-04 | Analyse d'un script de 200 lignes | 0.520 ms | 4.70 ms | 300 | < 20 ms | atteint |
+| CAR-N-04 | Étapes d'interprétation par seconde | 723 686 étapes/s | 1 141 159 étapes/s | 12 | ≥ 200 000 étapes/s | atteint |
+| CAR-N-05 | Délai entre un événement et l'indication visible | 0.050 ms | 0.149 ms | 100 | < 100 ms | atteint |
 | CAR-N-05 | Tour d'agent médian | — | — | — | < 4000 ms | mesuré ailleurs |
 
 ## Ce que couvre chaque mesure
