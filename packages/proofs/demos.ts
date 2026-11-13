@@ -18,8 +18,7 @@ import { fileURLToPath } from "node:url";
 import { APP_LIMITS, Dispatcher, Journal, clampSettings, parseStackFile, serializeStack } from "@cardwake/model";
 import type { AgentTurnRequest, ModelHost, Stack } from "@cardwake/model";
 import type { Determinism, Guards } from "@cardwake/lang";
-import { recordScenario, replayScenario } from "@cardwake/agent";
-import { SCENARIOS } from "../../scripts/cassettes/build";
+import { DEMO_SCENARIOS, recordScenario, replayScenario } from "@cardwake/agent";
 
 /** La racine du dépôt, déduite de ce fichier et non du répertoire courant. */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -145,7 +144,7 @@ async function spyDemo(): Promise<string> {
 /** Le rejeu : la cassette enregistrée rejoue deux fois le même état final. */
 async function replayDemo(): Promise<string> {
   const stack = loadStack("manor");
-  const steps = SCENARIOS.manor;
+  const steps = DEMO_SCENARIOS.manor;
   const recording = await recordScenario(stack, steps);
   const actions = steps.map((step) => step.action);
   const first = await replayScenario(stack, actions, recording.cassette);

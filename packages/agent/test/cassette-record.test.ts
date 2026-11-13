@@ -16,8 +16,9 @@ import type { CassetteEntry } from "@cardwake/model";
 import { CassetteGateway, CassetteMiss } from "../src";
 import { recordScenario, replayScenario } from "../src/cassette-recorder";
 import { makeRequest } from "../src/testing/fake-model";
-import { SCENARIOS, STACK_NAMES, cassetteFileFor, loadStack } from "../../../scripts/cassettes/build";
-import type { StackName } from "../../../scripts/cassettes/build";
+import { DEMO_SCENARIOS as SCENARIOS, STACK_NAMES } from "../src/demo-scenarios";
+import type { StackName } from "../src/demo-scenarios";
+import { cassetteFileFor, loadStack } from "../../../scripts/cassettes/build";
 
 /** La forme d'un fichier cassette tel qu'il est livré. */
 type CassetteFile = { mode: string; entries: readonly CassetteEntry[] };
