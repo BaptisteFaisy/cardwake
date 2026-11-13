@@ -316,13 +316,18 @@ async function attemptTask(
  * La demande de réparation : la phrase d'origine, et ce que la pile a
  * réellement montré. Un seul appel supplémentaire, comme le cahier le
  * prévoit — et le modèle voit le résultat, pas seulement l'échec.
+ *
+ * `errors` porte ce que l'exécution a signalé en plus (un tour d'agent que le
+ * fournisseur n'a pas servi, par exemple) : sans cela, le modèle corrige un
+ * script juste à cause d'une panne qui ne le regarde pas.
  */
-export function repairPhrase(task: EvalTask, failures: string[]): string {
+export function repairPhrase(task: EvalTask, failures: string[], errors: readonly string[] = []): string {
   return [
     task.phrase,
     "",
     "The script you proposed was installed and played on the stack. Here is what the stack actually showed:",
     ...failures.map((failure) => `- ${failure}`),
+    ...(errors.length === 0 ? [] : ["", "The run also reported:", ...errors.map((error) => `- ${error}`)]),
     "",
     "Write the corrected script for the same request.",
   ].join("\n");
@@ -412,7 +417,7 @@ export async function runTask(task: EvalTask, options: RunnerOptions): Promise<T
     target,
     counted.gateway,
     options,
-    repairPhrase(task, first.failures),
+    repairPhrase(task, first.failures, first.errors),
   );
   if ("reason" in repair) {
     return outcomeOf(task, { ...first, errors: [...first.errors, repair.reason] }, counted, false, true, 2);

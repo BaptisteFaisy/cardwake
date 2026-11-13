@@ -34,11 +34,27 @@ function partNamed(card: { parts: Part[] }, name: string, kind?: "button" | "fie
   return matches.find((part) => part.kind === kind);
 }
 
+/**
+ * Les marqueurs d'un échec d'exécution.
+ *
+ * `failed on` : un script qui casse. `The model call failed` : un tour d'agent
+ * que le fournisseur n'a pas servi. Sans le second, une panne de modèle
+ * ressemble à un script qui n'a rien écrit, et la réparation part sur une
+ * fausse piste.
+ */
+const FAILURE_MARKERS = ["failed on", "The model call failed"];
+
 /** Les erreurs d'exécution que le moteur a rencontrées pendant une action. */
 function errorsOf(engine: ModelEngineApi): string[] {
-  return engine.spy().trace.filter((line) => line.includes("failed on"));
+  const found = engine
+    .spy()
+    .trace.filter((line) => FAILURE_MARKERS.some((mark) => line.includes(mark)));
+  // Le tour d'agent en panne se lit aussi dans l'avis du moteur : il n'est
+  // pas toujours recopié dans la trace.
+  const notice = engine.lastNotice() ?? "";
+  if (FAILURE_MARKERS.some((mark) => notice.includes(mark))) found.push(notice);
+  return [...new Set(found)];
 }
-
 /** Joue un événement : un clic, une saisie, ou une phrase à l'agent. */
 async function playEvent(engine: ModelEngineApi, event: EvalTask["events"][number]): Promise<string | null> {
   const card = engine.currentCard();
