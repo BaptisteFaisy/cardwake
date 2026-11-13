@@ -98,6 +98,7 @@ const TEXTS: Record<string, string> = {
   "build.scriptApply": "Apply script",
   "build.scriptApplied": "The script is installed, and the journal keeps the transaction.",
   "build.draftAsk": "Ask for a draft",
+  "build.draftSuggestion": "Recorded demo — try this phrase",
   "build.scriptPhrase": "Describe what you want",
   "build.scriptPhrasePlaceholder": "For example: when this button is clicked, put the total and the tax into the Total field.",
   "build.scriptPropose": "Propose a draft",

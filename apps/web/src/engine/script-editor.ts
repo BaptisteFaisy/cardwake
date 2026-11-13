@@ -5,23 +5,21 @@
  * La chaîne elle-même est celle de `@cardwake/agent` (`writeScript`) : un seul
  * appel au modèle, les contrôles sans exécution, la relecture en clair, l'essai
  * à blanc sur une copie de la pile. Ce module ne la réécrit pas : il apporte ce
- * que l'écran ajoute — le résumé de la carte visée pour le modèle, le diff avec
- * le script en place, et le refus honnête quand il n'y a pas de modèle à
- * joindre.
+ * que l'écran ajoute — le diff avec le script en place, et le refus honnête
+ * quand il n'y a pas de modèle à joindre.
  *
  * Trois défenses précèdent l'installation, et l'installation n'appartient qu'à
  * l'humain : `proposeScript` rend un brouillon, `acceptDraft` est le seul
  * chemin qui installe (CAR-F-25). Refuser, c'est jeter le brouillon.
  *
- * La référence du langage est `docs/language.md`, importée telle quelle : la
- * même source pour le modèle et pour l'auteur qui relit (7.7).
+ * Le résumé de la carte visée et la référence du langage viennent de
+ * `@cardwake/agent` : l'enregistreur des cassettes construit la même demande,
+ * et les empreintes concorderont toujours (7.7).
  */
 
-import { buildCardView, writeScript } from "@cardwake/agent";
+import { LANGUAGE_REFERENCE, cardSummaryOf, writeScript } from "@cardwake/agent";
 import type { LlmGateway, WriteScriptResult } from "@cardwake/agent";
-import { clampSettings } from "@cardwake/model";
 import type { Card, Part, Stack } from "@cardwake/model";
-import reference from "../../../../docs/language.md?raw";
 
 /** Une ligne du diff : identique, retirée du script en place, ou ajoutée. */
 export type DiffLine = { kind: "same" | "removed" | "added"; text: string };
@@ -120,27 +118,6 @@ export function diffLines(before: string[], after: string[]): DiffLine[] {
   return lines;
 }
 
-/**
- * La carte telle que le rédacteur doit la voir : son nom, ses éléments, leurs
- * textes, et l'élément visé. C'est la vue canonique des agents (`buildCardView`),
- * remise en une phrase : le modèle ne peut pas inventer un champ absent d'ici.
- */
-function cardSummaryOf(stack: Stack, card: Card, part: Part): string {
-  const view = buildCardView(stack, card.id, clampSettings(stack.settings));
-  const fields = view.fields.map((field) => {
-    const content = field.text.trim() === "" ? "empty" : JSON.stringify(field.text);
-    return `field "${field.name}" (${content}${field.locked ? ", locked" : ""})`;
-  });
-  const buttons = view.buttons.map((button) => `button "${button.name}" (label "${button.label}")`);
-  const carries = [...fields, ...buttons].join(", ");
-  return [
-    `Stack "${view.stackName}". Card "${view.cardName}", agent level ${view.level}.`,
-    `The card carries ${carries === "" ? "nothing" : carries}.`,
-    `Other cards: ${view.otherCards.join(", ") || "none"}.`,
-    `The script will be attached to the ${part.kind} "${part.name}".`,
-  ].join("\n");
-}
-
 /** Un brouillon vide : le cas d'échec, avec de quoi le dire à l'écran. */
 function failedDraft(failure: DraftFailure, problem: string): ScriptDraft {
   return {
@@ -210,7 +187,7 @@ export async function proposeScript(request: ProposeRequest): Promise<ScriptDraf
       currentScript: request.part.script,
     },
     request.gateway,
-    { languageReference: reference, stack: request.stack, cardId: request.card.id },
+    { languageReference: LANGUAGE_REFERENCE, stack: request.stack, cardId: request.card.id },
   );
   return draftOf(result, request.part.script);
 }

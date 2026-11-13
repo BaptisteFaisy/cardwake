@@ -33,3 +33,8 @@ export const DEMO_STACKS: DemoStack[] = [
 export function demoStack(slug: string): DemoStack | undefined {
   return DEMO_STACKS.find((demo) => demo.slug === slug);
 }
+
+/** L'identifiant d'une pile de démonstration, si la pile en est une. */
+export function demoSlugFor(stack: Stack): string | undefined {
+  return DEMO_STACKS.find((demo) => demo.stack.name === stack.name)?.slug;
+}
