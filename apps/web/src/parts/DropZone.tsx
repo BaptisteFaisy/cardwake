@@ -27,18 +27,14 @@ function carriesFiles(event: Event): boolean {
   return types.includes("Files") || droppedFiles(event).length > 0;
 }
 
-export type DropZoneProps = {
-  /** Appelé avec le premier fichier déposé. */
-  onFile: (file: File) => void;
-};
-
-export function DropZone({ onFile }: DropZoneProps): JSX.Element | null {
+/**
+ * Le survol des fichiers déposés sur la page : rend `true` tant qu'un
+ * fichier est au-dessus du document. Le geste lui-même part vers `onFile`.
+ */
+export function useDropTarget(onFile: (file: File) => void): boolean {
   const [over, setOver] = useState(false);
   const handler = useRef(onFile);
-
-  useEffect(() => {
-    handler.current = onFile;
-  }, [onFile]);
+  handler.current = onFile;
 
   useEffect(() => {
     const onDragOver = (event: Event): void => {
@@ -68,25 +64,35 @@ export function DropZone({ onFile }: DropZoneProps): JSX.Element | null {
     };
   }, []);
 
+  return over;
+}
+
+/** Le voile affiché pendant le survol : il ne prend aucun clic. */
+const VEIL = {
+  position: "fixed",
+  inset: 0,
+  zIndex: 20,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  textAlign: "center",
+  padding: "2rem",
+  background: "rgba(247, 245, 239, 0.94)",
+  border: "3px dashed var(--ink)",
+  fontFamily: "var(--font-title)",
+  pointerEvents: "none",
+} as const;
+
+export type DropZoneProps = {
+  /** Appelé avec le premier fichier déposé. */
+  onFile: (file: File) => void;
+};
+
+export function DropZone({ onFile }: DropZoneProps): JSX.Element | null {
+  const over = useDropTarget(onFile);
   if (!over) return null;
   return (
-    <div
-      role="status"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 20,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        textAlign: "center",
-        padding: "2rem",
-        background: "rgba(247, 245, 239, 0.94)",
-        border: "3px dashed var(--ink)",
-        fontFamily: "var(--font-title)",
-        pointerEvents: "none",
-      }}
-    >
+    <div role="status" style={VEIL}>
       {t("persist.dropActive")}
     </div>
   );

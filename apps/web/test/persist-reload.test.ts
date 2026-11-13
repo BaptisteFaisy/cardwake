@@ -17,7 +17,7 @@ import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import type { Stack } from "@cardwake/model";
 import { App } from "../src/App";
-import { STACK_KEY, startSession } from "../src/data/persist";
+import { STACK_KEY, saveStack, startSession } from "../src/data/persist";
 import type { SessionStart } from "../src/data/persist";
 import type { StorageLike } from "../src/data/storage";
 import { serializeStack } from "@cardwake/model";
@@ -249,11 +249,10 @@ function stubDownload(
 describe("le sélecteur de pile", () => {
   it("« Open another stack » ramène à l'étagère, et ses trois exemples restent accessibles", async () => {
     const storage = memoryStorage();
+    saveStack(storage, workingStack());
     const { engine } = makeEngine();
     const container = await mountApp(engine, storage, startSession(engine, storage));
-    await act(async () => {
-      engine.openStack(workingStack());
-    });
+    expect(container.textContent).toContain(t("persist.resumed"));
 
     const another = button(container, t("persist.openAnother"));
     await act(async () => {
@@ -271,5 +270,8 @@ describe("le sélecteur de pile", () => {
     });
     expect(engine.state()?.name).toBe("The Manor");
     expect(storage.getItem(STACK_KEY)).toBe(serializeStack(engine.state()!));
+    // La mention « reprise au démarrage » ne parle que de la pile du démarrage.
+    expect(container.textContent).toContain(t("persist.kept"));
+    expect(container.textContent).not.toContain(t("persist.resumed"));
   });
 });
