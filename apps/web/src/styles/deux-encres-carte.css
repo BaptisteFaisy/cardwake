@@ -1,0 +1,301 @@
+/* --------------------------------------------------------------------- */
+/* Carte : le cadre 512×342 mis à l'échelle (11.8)                        */
+/* --------------------------------------------------------------------- */
+
+.card-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.card-frame {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 512 / 342; /* les proportions d'origine, sans déguisement */
+  border: 2px solid var(--ink);
+  background: #fffdf8;
+  overflow: hidden;
+}
+
+.part {
+  position: absolute;
+}
+
+.part-field input,
+.part-field textarea {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  padding: 0.15rem 0.3rem;
+  font-size: 0.95rem;
+}
+
+.part-field textarea {
+  resize: none;
+}
+
+.part-button button {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  font-family: var(--font-title);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.part-label {
+  position: absolute;
+  top: -0.85rem;
+  left: 0;
+  font-size: 0.65rem;
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+
+/* Encre d'agent (CAR-F-42) : couleur + marque en marge, jamais l'une sans
+   l'autre. Un humain qui modifie le texte rend l'encre noire. */
+.ink-agent input,
+.ink-agent textarea {
+  color: var(--accent);
+  border-left: 4px solid var(--accent);
+}
+
+.ink-mark {
+  position: absolute;
+  left: -0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+/* Flamme de bougie : la carte habitée, allumée seulement si l'agent veille. */
+.candle {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 14px;
+  height: 22px;
+  pointer-events: none;
+}
+
+.candle .body {
+  position: absolute;
+  bottom: 0;
+  left: 4px;
+  width: 6px;
+  height: 10px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.candle .flame {
+  position: absolute;
+  bottom: 10px;
+  left: 3px;
+  width: 8px;
+  height: 12px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: var(--accent);
+  animation: flicker 2.4s ease-in-out infinite;
+}
+
+.candle.out .flame {
+  background: none;
+  border: 1px dashed var(--ink-soft);
+  animation: none;
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.92);
+    opacity: 0.85;
+  }
+}
+
+/* Barre de navigation et jauge */
+.card-nav {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.card-nav .card-title {
+  font-family: var(--font-title);
+  font-weight: 700;
+}
+
+.budget-gauge {
+  border: 1px solid var(--ink);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  background: #fffdf8;
+}
+
+.budget-gauge .gauge-bar {
+  height: 6px;
+  border: 1px solid var(--ink);
+  margin-top: 0.25rem;
+  background: var(--paper);
+}
+
+.budget-gauge .gauge-fill {
+  height: 100%;
+  background: var(--ink);
+}
+
+.budget-gauge.exhausted .gauge-fill {
+  background: var(--accent);
+}
+
+.chat-bar {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.chat-bar input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------- */
+/* Mode Fabriquer : poignées, palette, inspecteur                          */
+/* --------------------------------------------------------------------- */
+
+.build-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.handle.selected {
+  outline: 2px dashed var(--focus);
+  outline-offset: 1px;
+}
+
+.palette {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.inspector {
+  border: 1px solid var(--ink);
+  background: #fffdf8;
+  padding: 0.6rem;
+}
+
+.inspector .tabs {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.inspector .tabs button[aria-selected="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.inspector .props {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.inspector label {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Fabriquer à partir de 900 px : palette et inspecteur à côté de la carte. */
+@media (min-width: 900px) {
+  .build-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    align-items: start;
+  }
+
+  .build-side {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+}
+
+/* --------------------------------------------------------------------- */
+/* Journal                                                                */
+/* --------------------------------------------------------------------- */
+
+.journal-toolbar {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+
+.journal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.journal-entry {
+  border: 1px solid var(--ink);
+  background: #fffdf8;
+  padding: 0.4rem 0.6rem;
+}
+
+.journal-entry .meta {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.journal-entry ul {
+  margin: 0.2rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+
+/* Ligne d'agent : accent + marque en marge « ◆ agent ». */
+.journal-entry.from-agent {
+  border-left: 6px solid var(--accent);
+}
+
+.journal-entry.from-agent .actor::before {
+  content: "◆ ";
+  color: var(--accent);
+}
+
+.journal-export {
+  width: 100%;
+  min-height: 8rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  white-space: pre;
+}
