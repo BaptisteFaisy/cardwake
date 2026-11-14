@@ -100,8 +100,9 @@ export function FieldPartView(props: FieldPartViewProps): JSX.Element {
       {...(inkedByAgent ? { "aria-live": "polite" as const } : {})}
     >
       {inkedByAgent ? (
-        <span className="ink-mark" aria-hidden="true">
-          ◆
+        <span className="ink-mark">
+          <span aria-hidden="true">◆</span>
+          <span className="visually-hidden">{t("play.writtenByAgent")}</span>
         </span>
       ) : null}
       {part.multiline ? (

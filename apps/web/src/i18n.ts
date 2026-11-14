@@ -25,9 +25,9 @@ const TEXTS: Record<string, string> = {
   "mode.switchToPlay": "Switch to play mode",
   "mode.switchToBuild": "Switch to build mode",
   "common.close": "Close",
-  "common.cancel": "Cancel",
-  "common.ok": "OK",
   "common.none": "None",
+  "common.yes": "Yes",
+  "common.no": "No",
   "common.you": "you",
 
   // Étagère (CAR-F-01)
@@ -104,9 +104,9 @@ const TEXTS: Record<string, string> = {
   "build.agentNone": "No agent on this card.",
   "build.agentLevel": "Level",
   "build.agentAwake": "Awake",
+  "build.agentSpeed": "Speed",
   "build.agentPersona": "Instructions",
   "build.delete": "Delete",
-  "build.handles": "Handles",
   "build.refused": "Refused",
 
   // Atelier de script : la phrase, le brouillon, les trois défenses (7.7)

@@ -207,8 +207,34 @@ function Inspector(props: InspectorProps): JSX.Element {
       {tab === "script" ? (
         <ScriptEditor key={part.id} engine={engine} stack={stack} card={card} part={part} />
       ) : null}
-      {tab === "agent" ? <p>{t("build.agentNone")}</p> : null}
+      {tab === "agent" ? <AgentTab card={card} /> : null}
     </div>
+  );
+}
+
+/**
+ * Onglet Agent : les quatre réglages de la carte, en lecture seule (7.5).
+ *
+ * Le défaut corrigé ici : l'onglet rendait `build.agentNone` **quel que soit**
+ * le contenu de la carte — une carte habitée affichait « No agent on this
+ * card. », et les trois clés du dictionnaire écrites pour cet écran restaient
+ * mortes. Un humain seul fixe ces réglages (règle 4) : l'écran les montre, il
+ * ne les change pas.
+ */
+export function AgentTab({ card }: { card: Card }): JSX.Element {
+  const agent = card.agent;
+  if (agent === null) return <p>{t("build.agentNone")}</p>;
+  return (
+    <dl className="agent-props">
+      <dt>{t("build.agentAwake")}</dt>
+      <dd>{agent.awake ? t("common.yes") : t("common.no")}</dd>
+      <dt>{t("build.agentLevel")}</dt>
+      <dd>{agent.level}</dd>
+      <dt>{t("build.agentSpeed")}</dt>
+      <dd>{agent.speed}</dd>
+      <dt>{t("build.agentPersona")}</dt>
+      <dd>{agent.persona === "" ? t("common.none") : agent.persona}</dd>
+    </dl>
   );
 }
 
