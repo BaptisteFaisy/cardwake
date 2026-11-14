@@ -229,6 +229,24 @@ textarea {
   gap: 0.4rem;
 }
 
+/* Onglet Agent : quatre réglages, en lecture seule (7.5). Une définition, pas
+   un formulaire — un humain seul fixe un niveau, l'écran ne le change pas. */
+.inspector .agent-props {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.25rem 0.6rem;
+  margin: 0;
+}
+
+.inspector .agent-props dt {
+  font-weight: 600;
+}
+
+.inspector .agent-props dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .inspector label {
   display: flex;
   gap: 0.4rem;
