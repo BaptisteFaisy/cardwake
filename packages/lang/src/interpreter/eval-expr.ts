@@ -74,6 +74,18 @@ export async function readContainer(target: Container, env: Env): Promise<string
   return readChunk(inner, target.chunk.type, bounds.ordinal, bounds.from, bounds.to);
 }
 
+/**
+ * Insère une valeur dans un texte, selon le mode du `put` : `into` remplace,
+ * `before` colle devant, `after` colle derrière. Le même calcul sert pour
+ * une variable, pour `it` et pour un champ — un seul endroit, donc un seul
+ * comportement.
+ */
+export function insertInto(current: string, value: string, mode: "replace" | "before" | "after"): string {
+  if (mode === "before") return value + current;
+  if (mode === "after") return current + value;
+  return value;
+}
+
 /** Écrit dans un conteneur, morceau compris. */
 export async function writeContainer(
   target: Container,
@@ -83,11 +95,14 @@ export async function writeContainer(
 ): Promise<void> {
   env.checkSize(value, "this text");
   if (target.kind === "var") {
-    env.set(target.name, value);
+    // `before`/`after` insèrent, comme sur un champ : le texte courant de la
+    // variable est la base, pas un remplacement (le langage le dit pour tout
+    // conteneur : une variable, `it`, un champ ou un bouton).
+    env.set(target.name, insertInto(env.get(target.name) ?? "", value, mode));
     return;
   }
   if (target.kind === "it") {
-    env.it = value;
+    env.it = insertInto(env.it, value, mode);
     return;
   }
   if (target.kind === "obj") {
