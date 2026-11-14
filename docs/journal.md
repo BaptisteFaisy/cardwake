@@ -146,3 +146,20 @@ une seule forme.
   chez le fournisseur, la même phrase part donc chez un fournisseur différent
   d'un appel à l'autre. Sur une cible de 85 %, un modèle routé est un mauvais
   instrument — mieux vaut la fourchette que le meilleur chiffre.
+
+## 2026-11-14 — spec `editor-ui` : le parcours de trois clics, enfin écrit
+
+- `apps/web/test/three-clicks.test.ts` existait dans `tasks.md` depuis la
+  première tâche : le fichier n'avait jamais été écrit. Cinq autres noms de
+  tests de la même liste (`shelf`, `card`, `editor`, `journal-panel`, `ink`)
+  étaient des intentions — la couverture réelle vit dans `engine.test.ts`,
+  `script-screen.test.ts`, `a11y.test.ts` et `ops-journal.test.ts`. La liste est
+  réalignée sur les fichiers qui existent, et la tâche 2 reste **non cochée** :
+  la sélection d'un élément à l'écran n'a pas de test.
+- Le test rend le parcours du jury au niveau des **écrans** : étagère (trois
+  piles valides, le manoir proposé), bouton « Show the amulet » nommé, réponse
+  de l'agent dans son champ, encre d'agent annoncée à l'oreille, journal avec
+  annuler qui ne défait qu'une ligne (7.13). Sans clé, sans réseau, sans jsdom :
+  la pile livrée, sa cassette livrée, le moteur réel.
+- Vérifié par mutation, pas par croyance : déplacer l'identifiant du bouton
+  (11 → 12) fait rougir deux des cinq cas.
