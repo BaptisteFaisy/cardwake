@@ -72,9 +72,9 @@ end mouseUp
 
 ## The traps that cost the most
 
-1. **A variable grows with `into`, not with `after`.** `put x after myVar`
-   replaces `myVar` with `x`; only a field or a chunk is appended with
-   `after`. To add a line: `put myVar & return & x into myVar`.
+1. **One rule for `put`, on every container.** `into` replaces; `before` and
+   `after` insert — on a variable exactly as on a field. `put x after myVar`
+   appends, `put x into myVar` replaces: there is no exception to learn.
 2. **The agent's answer is in `it`**, not in a field:
    `consult agent with "…"` then `put it into field "Says"`.
 3. **The chat goes straight to the card's agent.** Its persona answers; a

@@ -2,6 +2,23 @@
   "mode": "cassette",
   "entries": [
     {
+      "fingerprint": "0190abf22455eccb6e5f24690c790369698d245dfd96fdbc9cba0cd198cd0ee3",
+      "purpose": "write-script",
+      "response": {
+        "stop": "end",
+        "blocks": [
+          {
+            "type": "text",
+            "text": "{\"script\":\"on mouseUp\\n  put \\\"A visitor showed a silver amulet.\\\" after field \\\"Memory\\\"\\n  put \\\"alarmed\\\" into field \\\"Mood\\\"\\nend mouseUp\\n\",\"summary\":\"When the button is clicked, appends the sentence to the Memory field and sets the Mood field to \\\"alarmed\\\".\",\"assumptions\":[\"The existing mouseUp handler is replaced by this new behaviour.\",\"No extra separator is inserted before the appended Memory text.\"],\"questions\":[]}"
+          }
+        ],
+        "usage": {
+          "inputTokens": 1,
+          "outputTokens": 1
+        }
+      }
+    },
+    {
       "fingerprint": "0ea0f3ee95066b3fff1a327a166c272649a431a6b6ef7da8b51fe5c0bcc65f11",
       "purpose": "agent-turn",
       "response": {
@@ -55,23 +72,6 @@
               "to_card": "Cook",
               "text": "A stranger carries the silver amulet. Watch the key."
             }
-          }
-        ],
-        "usage": {
-          "inputTokens": 1,
-          "outputTokens": 1
-        }
-      }
-    },
-    {
-      "fingerprint": "4403bf0fd0af16a24a2bc706d9610b9b0eeedbe07b051efed3abcb3068569f24",
-      "purpose": "write-script",
-      "response": {
-        "stop": "end",
-        "blocks": [
-          {
-            "type": "text",
-            "text": "{\"script\":\"on mouseUp\\n  put \\\"A visitor showed a silver amulet.\\\" after field \\\"Memory\\\"\\n  put \\\"alarmed\\\" into field \\\"Mood\\\"\\nend mouseUp\\n\",\"summary\":\"When the button is clicked, appends the sentence to the Memory field and sets the Mood field to \\\"alarmed\\\".\",\"assumptions\":[\"The existing mouseUp handler is replaced by this new behaviour.\",\"No extra separator is inserted before the appended Memory text.\"],\"questions\":[]}"
           }
         ],
         "usage": {

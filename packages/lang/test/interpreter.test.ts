@@ -109,6 +109,55 @@ end mouseUp`;
   });
 });
 
+describe("les trois modes du put, sur tout conteneur", () => {
+  // La référence l'écrit pour tout conteneur (docs/language.md, « put ») :
+  // `into` remplace, `before` et `after` insèrent. Une variable n'est pas une
+  // exception — c'est ce que ces tests verrouillent, un seul calcul servant
+  // à la variable, à `it` et au champ.
+  it("`after` et `before` insèrent dans une variable, `into` remplace", async () => {
+    const source = `on mouseUp
+  put "a" into acc
+  put "b" after acc
+  put "c" before acc
+  put acc into field "Out"
+end mouseUp`;
+    const { world } = await run(source, { Out: "" });
+    expect(readField(world, "One", "Out")).toBe("cab");
+  });
+
+  it("`it` s'ajoute comme une variable", async () => {
+    const source = `on mouseUp
+  get "a"
+  put "b" after it
+  put it into field "Out"
+end mouseUp`;
+    const { world } = await run(source, { Out: "" });
+    expect(readField(world, "One", "Out")).toBe("ab");
+  });
+
+  it("une variable vide reçoit la valeur, sans texte devant", async () => {
+    const source = `on mouseUp
+  put empty into acc
+  put "seul" after acc
+  put acc into field "Out"
+end mouseUp`;
+    const { world } = await run(source, { Out: "" });
+    expect(readField(world, "One", "Out")).toBe("seul");
+  });
+
+  it("un morceau de variable se lit mais ne s'écrit pas : l'erreur reste lisible", async () => {
+    const source = `on mouseUp
+  put "un deux" into acc
+  put word 1 of acc into field "Out"
+  put "trois" into word 1 of acc
+end mouseUp`;
+    const { world, result } = await run(source, { Out: "" });
+    expect(readField(world, "One", "Out")).toBe("un");
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain("field");
+  });
+});
+
 describe("garde-fous et déterminisme", () => {
   it("CAR-P-06 : une boucle sans fin s'arrête sous maxSteps", async () => {
     const world = fakeWorld({});

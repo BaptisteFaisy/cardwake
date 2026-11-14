@@ -676,10 +676,11 @@ Two points make this recipe work, and both are easy to get wrong:
 
 - **`return` is the line break.** Join with `& return &`, never with a comma:
   `","` would make one single line.
-- **A variable grows with `into`, not with `after`.** `put x after myVar`
-  REPLACES `myVar` with `x`: only a field and a chunk are appended with
-  `after`. To add to a variable, write the whole new value:
-  `put myVar & return & x into myVar`.
+- **One rule for `put`, on every container.** `into` replaces, `before` and
+  `after` insert — on a variable exactly as on a field. The `if`/`else` above is
+  the explicit form; `put (amount * 2) & return after result` appends in one
+  line, at the price of a trailing line break to strip with
+  `char 1 to -2 of result`.
 
 Writing straight into the field also works: it appends to the field and drops
 the last line break.
@@ -796,10 +797,10 @@ end mouseUp
     Wrong: `send "compute" to this card` then reading the result on the next
     line — Right: the message is handled after the current handler ends; to
     get an answer immediately, call a function or `consult`.
-16. **Appending to a variable with `after`.**
-    Wrong: `put x after myVar` (this replaces `myVar` with `x`) — Right:
-    `put myVar & x into myVar`. Only fields and chunks are appended with
-    `after`.
+16. **Rebuilding a variable `after` would append to.**
+    Wrong: `put myVar & x into myVar` — Right: `put x after myVar`, one line
+    for the same result. `into` replaces, `before` and `after` insert, and no
+    container is an exception: a variable, `it`, a field, a button, a chunk.
 17. **Handling the chat with a script.**
     Wrong: `on chat` … — Right: the chat bar talks to the card's agent, whose
     persona answers; a script attached to a field never receives it.
